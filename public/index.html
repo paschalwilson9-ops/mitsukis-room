@@ -2065,6 +2065,12 @@
                         player: name
                     });
                     
+                    // Reconnect WebSocket with the new token
+                    if (gameState.socket) {
+                        gameState.socket.close();
+                    }
+                    initializeWebSocket();
+                    
                     fetchGameState();
                 } else {
                     showStatus(data.message || 'Failed to join game', 'error');
@@ -2135,11 +2141,14 @@
             // Update community cards
             updateCommunityCards(state.communityCards || []);
 
-            // Update players
-            updatePlayers(state.players || []);
+            // Update players - ensure we have valid player data
+            const players = state.players || [];
+            updatePlayers(players.filter(p => p !== null));
 
-            // Update player's cards
-            if (state.playerCards && !gameState.isSpectating) {
+            // Update player's cards (use state.you.holeCards if available)
+            if (state.you && state.you.holeCards && !gameState.isSpectating) {
+                updatePlayerCards(state.you.holeCards);
+            } else if (state.playerCards && !gameState.isSpectating) {
                 updatePlayerCards(state.playerCards);
             }
 
@@ -2264,89 +2273,103 @@
                 seat.querySelector('.turn-timer').style.display = 'none';
             }
 
-            // Update occupied seats
-            players.forEach(player => {
-                const seat = document.getElementById(`seat-${player.seat}`);
-                if (seat) {
-                    seat.classList.remove('empty');
-                    
-                    // Set up avatar with initials
-                    const avatar = seat.querySelector('.player-avatar');
-                    avatar.style.display = 'flex';
-                    avatar.textContent = getPlayerInitials(player.name);
-                    avatar.style.background = getPlayerColor(player.name);
-                    
-                    // Update player info
-                    seat.querySelector('.player-name').textContent = player.name;
-                    const stackElement = seat.querySelector('.player-stack');
-                    stackElement.style.display = 'block';
-                    stackElement.textContent = `$${player.stack}`;
-                    
-                    // Update bet
-                    const betElement = seat.querySelector('.player-bet');
-                    if (player.bet > 0) {
-                        betElement.style.display = 'block';
-                        betElement.textContent = `$${player.bet}`;
-                        betElement.classList.add('chip-animation');
-                        setTimeout(() => betElement.classList.remove('chip-animation'), 400);
-                    } else {
-                        betElement.style.display = 'none';
+            // Update occupied seats - handle both array format and seat-indexed format
+            if (Array.isArray(players)) {
+                // If it's an array indexed by seat number (from getStateForPlayer)
+                players.forEach((player, index) => {
+                    if (player && player.seat !== undefined) {
+                        updateSinglePlayerSeat(player);
+                    } else if (player && index < 9) {
+                        // If seat is not defined but we have player data, use array index as seat
+                        player.seat = index;
+                        updateSinglePlayerSeat(player);
                     }
-
-                    // Update status
-                    const statusElement = seat.querySelector('.player-status');
-                    if (player.status && player.status !== 'active') {
-                        statusElement.style.display = 'block';
-                        statusElement.textContent = player.status.toUpperCase();
-                        if (player.status === 'folded') {
-                            seat.classList.add('folded');
-                        }
-                    } else {
-                        statusElement.style.display = 'none';
+                });
+            } else {
+                // If it's an object with seat keys
+                Object.values(players).forEach(player => {
+                    if (player && player.seat !== undefined) {
+                        updateSinglePlayerSeat(player);
                     }
+                });
+            }
+        }
 
-                    // Handle current player highlighting
-                    if (player.isCurrentPlayer) {
-                        seat.classList.add('active');
-                        // Show turn timer
-                        const timer = seat.querySelector('.turn-timer');
-                        timer.style.display = 'block';
-                        startTurnTimer(timer);
-                        
-                        // Dim other players
-                        players.forEach(otherPlayer => {
-                            if (otherPlayer.seat !== player.seat) {
-                                const otherSeat = document.getElementById(`seat-${otherPlayer.seat}`);
-                                if (otherSeat) otherSeat.classList.add('inactive');
-                            }
-                        });
-                    }
-
-                    // Add dealer button
-                    if (player.isDealer) {
-                        const dealerButton = document.createElement('div');
-                        dealerButton.className = 'dealer-button';
-                        dealerButton.textContent = 'D';
-                        seat.appendChild(dealerButton);
-                    }
-
-                    // Add blind indicators
-                    if (player.isSmallBlind) {
-                        const blindIndicator = document.createElement('div');
-                        blindIndicator.className = 'blind-indicator small-blind';
-                        blindIndicator.textContent = 'SB';
-                        seat.appendChild(blindIndicator);
-                    } else if (player.isBigBlind) {
-                        const blindIndicator = document.createElement('div');
-                        blindIndicator.className = 'blind-indicator big-blind';
-                        blindIndicator.textContent = 'BB';
-                        seat.appendChild(blindIndicator);
-                    }
-
-                    // Update chip stack visualization
-                    updatePlayerChipStack(seat, player.stack);
+        // Update a single player seat
+        function updateSinglePlayerSeat(player) {
+            const seat = document.getElementById(`seat-${player.seat}`);
+            if (seat) {
+                seat.classList.remove('empty');
+                
+                // Set up avatar with initials
+                const avatar = seat.querySelector('.player-avatar');
+                avatar.style.display = 'flex';
+                avatar.textContent = getPlayerInitials(player.name);
+                avatar.style.background = getPlayerColor(player.name);
+                
+                // Update player info
+                seat.querySelector('.player-name').textContent = player.name;
+                const stackElement = seat.querySelector('.player-stack');
+                stackElement.style.display = 'block';
+                stackElement.textContent = `$${player.stack}`;
+                
+                // Update bet (use currentBet or bet property)
+                const betElement = seat.querySelector('.player-bet');
+                const betAmount = player.currentBet || player.bet || 0;
+                if (betAmount > 0) {
+                    betElement.style.display = 'block';
+                    betElement.textContent = `$${betAmount}`;
+                    betElement.classList.add('chip-animation');
+                    setTimeout(() => betElement.classList.remove('chip-animation'), 400);
+                } else {
+                    betElement.style.display = 'none';
                 }
-            });
+
+                // Update status
+                const statusElement = seat.querySelector('.player-status');
+                if (player.status && player.status !== 'active') {
+                    statusElement.style.display = 'block';
+                    statusElement.textContent = player.status.toUpperCase();
+                    if (player.status === 'folded') {
+                        seat.classList.add('folded');
+                    }
+                } else {
+                    statusElement.style.display = 'none';
+                }
+
+                // Handle current player highlighting
+                if (player.isCurrentPlayer) {
+                    seat.classList.add('active');
+                    // Show turn timer
+                    const timer = seat.querySelector('.turn-timer');
+                    timer.style.display = 'block';
+                    startTurnTimer(timer);
+                }
+
+                // Add dealer button
+                if (player.isDealer) {
+                    const dealerButton = document.createElement('div');
+                    dealerButton.className = 'dealer-button';
+                    dealerButton.textContent = 'D';
+                    seat.appendChild(dealerButton);
+                }
+
+                // Add blind indicators
+                if (player.isSmallBlind) {
+                    const blindIndicator = document.createElement('div');
+                    blindIndicator.className = 'blind-indicator small-blind';
+                    blindIndicator.textContent = 'SB';
+                    seat.appendChild(blindIndicator);
+                } else if (player.isBigBlind) {
+                    const blindIndicator = document.createElement('div');
+                    blindIndicator.className = 'blind-indicator big-blind';
+                    blindIndicator.textContent = 'BB';
+                    seat.appendChild(blindIndicator);
+                }
+
+                // Update chip stack visualization
+                updatePlayerChipStack(seat, player.stack);
+            }
         }
 
         // Get player initials for avatar
@@ -2419,13 +2442,15 @@
         function updateActionButtons(state) {
             const buttonsContainer = document.getElementById('actionButtons');
             
-            if (state.isPlayerTurn && !gameState.isSpectating) {
+            if ((state.isYourTurn || state.isPlayerTurn) && !gameState.isSpectating) {
                 buttonsContainer.classList.add('visible');
                 
                 // Update check/call button text
                 const checkCallBtn = document.getElementById('checkCallBtn');
-                if (state.callAmount > 0) {
-                    checkCallBtn.textContent = `Call $${state.callAmount}`;
+                const toCall = state.toCall || state.callAmount || 0;
+                
+                if (toCall > 0) {
+                    checkCallBtn.textContent = `Call $${toCall}`;
                     checkCallBtn.className = 'action-btn call';
                     checkCallBtn.onclick = () => performAction('call');
                 } else {
@@ -2436,7 +2461,8 @@
 
                 // Show all-in button if stack is low
                 const allinBtn = document.querySelector('.action-btn.allin');
-                if (state.playerStack && state.playerStack <= (state.callAmount || 0) * 2) {
+                const playerStack = state.you ? state.you.stack : state.playerStack;
+                if (playerStack && playerStack <= (toCall || 0) * 2) {
                     allinBtn.style.display = 'block';
                 } else {
                     allinBtn.style.display = 'none';
@@ -2444,12 +2470,13 @@
                 
                 // Update raise slider limits
                 const slider = document.getElementById('raiseSlider');
-                if (state.minRaise && state.maxRaise) {
-                    slider.min = state.minRaise;
-                    slider.max = state.maxRaise;
-                    slider.value = state.minRaise;
-                    document.getElementById('raiseAmount').textContent = state.minRaise;
-                }
+                const minRaise = state.minRaise || (state.currentBet || 0) + (state.minRaise || 20);
+                const maxRaise = playerStack ? (state.currentBet || 0) + playerStack : 1000;
+                
+                slider.min = minRaise;
+                slider.max = maxRaise;
+                slider.value = minRaise;
+                document.getElementById('raiseAmount').textContent = minRaise;
             } else {
                 buttonsContainer.classList.remove('visible');
                 hideRaiseControls();
@@ -2618,16 +2645,18 @@
                 const data = await response.json();
                 
                 const container = document.getElementById('leaderboardContent');
-                if (data.length === 0) {
+                const leaderboard = data.leaderboard || data; // Handle both formats
+                
+                if (leaderboard.length === 0) {
                     container.innerHTML = '<div style="text-align: center; color: #8892b0;">No players yet</div>';
                     return;
                 }
 
-                container.innerHTML = data.map((player, index) => `
+                container.innerHTML = leaderboard.map((player, index) => `
                     <div class="leaderboard-entry">
                         <strong>#${index + 1}</strong> ${player.name}
                         <br>
-                        <small>ELO: ${player.elo} | Games: ${player.gamesPlayed}</small>
+                        <small>ELO: ${player.elo} | Hands: ${player.handsPlayed || 0}</small>
                     </div>
                 `).join('');
             } catch (error) {
@@ -2643,14 +2672,16 @@
                 const data = await response.json();
                 
                 const container = document.getElementById('handHistoryContent');
-                if (data.length === 0) {
+                const history = data.history || data; // Handle both formats
+                
+                if (history.length === 0) {
                     container.innerHTML = '<div style="text-align: center; color: #8892b0;">No hands played yet</div>';
                     return;
                 }
 
-                container.innerHTML = data.map(hand => `
+                container.innerHTML = history.map(hand => `
                     <div class="history-entry">
-                        <strong>${hand.winner}</strong> won $${hand.pot}
+                        <strong>Hand #${hand.handNumber || '?'}</strong> - Pot $${hand.pot}
                         <br>
                         <small>${new Date(hand.timestamp).toLocaleTimeString()}</small>
                     </div>
