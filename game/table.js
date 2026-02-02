@@ -7,6 +7,7 @@ const { v4: uuidv4 } = require('uuid');
 const { Deck, cardsToString, cardToString } = require('./deck');
 const { evaluateHand, determineWinners } = require('./hand-eval');
 const config = require('../config');
+const dealerAI = require('./dealer-ai');
 
 const PHASES = ['waiting', 'preflop', 'flop', 'turn', 'river', 'showdown'];
 
@@ -43,6 +44,10 @@ class Table {
     this.turnTimer = null;
     this.timeBankTimer = null;   // Time bank timer
     this.currentHandLog = [];
+    
+    // AI Dealer: Player stats tracking for context
+    this.playerStats = {};       // { name: { hands: 0, folds: 0, raises: 0, calls: 0, wins: 0, allIns: 0 } }
+    this.recentActions = [];     // Track recent actions for AI context
 
     // Broadcast function (set by server)
     this.broadcast = () => {};
@@ -60,6 +65,68 @@ class Table {
     this.currentHandLog.push(entry);
     console.log(`[Table ${this.id.slice(0, 6)}] ${msg}`);
     this.broadcast({ type: 'mitsuki', message: msg });
+  }
+
+  // AI-powered dealer commentary (fire and forget, non-blocking)
+  async dealerComment(context) {
+    if (!config.DEALER_AI.enabled) {
+      return;
+    }
+
+    // Don't block game logic - run AI generation asynchronously
+    setImmediate(async () => {
+      try {
+        const comment = await dealerAI.getDealerComment({
+          ...context,
+          players: this.seatedPlayers().map(p => ({ name: p.name, stack: p.stack })),
+          pot: this.pot,
+          phase: this.phase,
+          handNumber: this.handNumber,
+          communityCards: this.communityCards?.map(c => cardToString(c)),
+          recentActions: this.recentActions.slice(-5),
+          playerStats: this.playerStats
+        });
+
+        if (comment) {
+          this.mitsuki(comment);
+        }
+      } catch (error) {
+        console.error('[Dealer AI] Error:', error);
+      }
+    });
+  }
+
+  // Update player stats for AI context
+  updatePlayerStats(playerName, action, isAllIn = false) {
+    if (!this.playerStats[playerName]) {
+      this.playerStats[playerName] = { hands: 0, folds: 0, raises: 0, calls: 0, checks: 0, wins: 0, allIns: 0, foldRate: 0, raiseRate: 0 };
+    }
+    
+    const stats = this.playerStats[playerName];
+    
+    switch (action) {
+      case 'newHand': stats.hands++; break;
+      case 'fold': stats.folds++; break;
+      case 'raise': stats.raises++; if (isAllIn) stats.allIns++; break;
+      case 'call': stats.calls++; if (isAllIn) stats.allIns++; break;
+      case 'check': stats.checks++; break;
+      case 'win': stats.wins++; break;
+    }
+    
+    // Calculate rates for AI context
+    const totalActions = stats.folds + stats.raises + stats.calls + stats.checks;
+    if (totalActions > 0) {
+      stats.foldRate = stats.folds / totalActions;
+      stats.raiseRate = stats.raises / totalActions;
+    }
+
+    // Track recent action for context (skip newHand)
+    if (action !== 'newHand') {
+      this.recentActions.push(`${playerName} ${action}`);
+      if (this.recentActions.length > 10) {
+        this.recentActions.shift();
+      }
+    }
   }
 
   // ─── Seating ──────────────────────────────────────────────────
@@ -190,6 +257,12 @@ class Table {
     this.pots = [];
     this.currentBetLevel = 0;
     this.minRaise = config.BIG_BLIND;
+    this.recentActions = []; // Reset recent actions for new hand
+    
+    // Update hand count stats for all players
+    for (const p of eligible) {
+      this.updatePlayerStats(p.name, 'newHand');
+    }
 
     // Reset players
     for (const p of this.seatedPlayers()) {
@@ -474,26 +547,34 @@ class Table {
       case 'fold':
         player.status = 'folded';
         player.lastAction = 'fold';
-        this.mitsuki(`${player.name} folds.`);
+        this.updatePlayerStats(player.name, 'fold');
+        this.dealerComment({ event: 'fold', player: player.name });
         break;
 
       case 'check':
         if (toCall > 0) return { error: 'Cannot check — there is a bet to you' };
         player.lastAction = 'check';
-        this.mitsuki(`${player.name} checks.`);
+        this.updatePlayerStats(player.name, 'check');
+        this.dealerComment({ event: 'check', player: player.name });
         break;
 
       case 'call': {
         const callAmount = player.bet(toCall);
         this.pot += callAmount;
         player.lastAction = 'call';
+        const isAllIn = player.status === 'all-in';
         
-        if (player.status === 'all-in') {
-          this.mitsuki(`${player.name} calls ${callAmount} and is all-in!`);
+        this.updatePlayerStats(player.name, 'call', isAllIn);
+        this.dealerComment({ 
+          event: 'call', 
+          player: player.name, 
+          amount: callAmount,
+          isAllIn
+        });
+        
+        if (isAllIn) {
           // Recalculate pots when someone goes all-in
           this.calculatePots();
-        } else {
-          this.mitsuki(`${player.name} calls ${callAmount}.`);
         }
         break;
       }
@@ -527,11 +608,23 @@ class Table {
             this.minRaise = raiseIncrement;
             this._lastRaiserSeat = player.seat;
             player.lastAction = 'raise';
-            this.mitsuki(`${player.name} raises to ${player.currentBet} — ALL IN! Bold move.`);
+            this.updatePlayerStats(player.name, 'raise', true);
+            this.dealerComment({ 
+              event: 'raise', 
+              player: player.name, 
+              amount: player.currentBet,
+              isAllIn: true,
+              isBigRaise: raiseIncrement > this.bigBlind * 3
+            });
           } else {
             // Incomplete raise - doesn't reopen action
             player.lastAction = 'call';
-            this.mitsuki(`${player.name} calls ${actualBet} — ALL IN!`);
+            this.updatePlayerStats(player.name, 'call', true);
+            this.dealerComment({ 
+              event: 'call', 
+              player: player.name,
+              isAllIn: true
+            });
           }
           
           // Recalculate pots when someone goes all-in
@@ -542,7 +635,14 @@ class Table {
           this.minRaise = raiseIncrement;
           this._lastRaiserSeat = player.seat;
           player.lastAction = 'raise';
-          this.mitsuki(`${player.name} raises to ${player.currentBet}.`);
+          this.updatePlayerStats(player.name, 'raise');
+          this.dealerComment({ 
+            event: 'raise', 
+            player: player.name,
+            amount: player.currentBet,
+            raiseIncrement,
+            isBigRaise: raiseIncrement > this.bigBlind * 3
+          });
         }
 
         break;
@@ -698,6 +798,11 @@ class Table {
     const cards = this.deck.deal(3);
     this.communityCards.push(...cards);
     this.mitsuki(`🌙 The flop: ${cardsToString(cards)}`);
+    this.dealerComment({ 
+      event: 'flop', 
+      flopCards: cardsToString(cards),
+      boardTexture: this.analyzeBoardTexture(cards)
+    });
     this.broadcast({ type: 'community_cards', cards: this.communityCards, phase: 'flop' });
   }
 
@@ -706,6 +811,10 @@ class Table {
     const cards = this.deck.deal(1);
     this.communityCards.push(...cards);
     this.mitsuki(`🌙 The turn: ${cardToString(cards[0])}`);
+    this.dealerComment({ 
+      event: 'turn', 
+      turnCard: cardToString(cards[0])
+    });
     this.broadcast({ type: 'community_cards', cards: this.communityCards, phase: 'turn' });
   }
 
@@ -714,6 +823,11 @@ class Table {
     const cards = this.deck.deal(1);
     this.communityCards.push(...cards);
     this.mitsuki(`🌙 The river speaks: ${cardToString(cards[0])}`);
+    this.dealerComment({ 
+      event: 'river', 
+      riverCard: cardToString(cards[0]),
+      finalBoard: cardsToString(this.communityCards)
+    });
     this.broadcast({ type: 'community_cards', cards: this.communityCards, phase: 'river' });
   }
 
@@ -723,6 +837,11 @@ class Table {
   showdown() {
     this.phase = 'showdown';
     this.clearTurnTimer();
+
+    // Run pit boss verification for large pots
+    if (config.DEALER_AI.enabled) {
+      this.runPitBossVerification();
+    }
 
     const contenders = this.activePlayers();
     if (contenders.length === 0) return;
@@ -765,6 +884,7 @@ class Table {
       for (const dist of distributions) {
         dist.player.award(dist.amount);
         dist.player.handsWon++;
+        this.updatePlayerStats(dist.player.name, 'win');
         awards.push({
           player: dist.player.name,
           amount: dist.amount,
@@ -774,6 +894,14 @@ class Table {
         
         if (pot.amount > 0) {
           this.mitsuki(`🏆 ${dist.player.name} wins ${dist.amount} from ${pot.name} with ${dist.hand.name}!`);
+          this.dealerComment({ 
+            event: 'win', 
+            player: dist.player.name,
+            amount: dist.amount,
+            hand: dist.hand.name,
+            potSize: pot.amount,
+            wasUnderdog: this.wasUnderdog(dist.player.name)
+          });
         }
       }
 
@@ -865,7 +993,15 @@ class Table {
     const totalPot = this.pot;
     player.award(totalPot);
     player.handsWon++;
+    this.updatePlayerStats(player.name, 'win');
     this.mitsuki(`🏆 ${player.name} takes the pot (${totalPot}). No contest.`);
+    this.dealerComment({ 
+      event: 'win', 
+      player: player.name,
+      amount: totalPot,
+      type: 'uncontested',
+      foldedPlayers: this.seatedPlayers().filter(p => p.status === 'folded').length
+    });
 
     this.broadcast({
       type: 'hand_complete',
@@ -1102,6 +1238,88 @@ class Table {
       buyInRange: `${this.minBuyIn}-${this.maxBuyIn}`,
       communityCards: this.communityCards,
     };
+  }
+
+  // ─── AI Dealer Helper Methods ──────────────────────────────────────
+
+  /** Analyze board texture for AI context */
+  analyzeBoardTexture(cards) {
+    if (!cards || cards.length < 3) return 'unknown';
+    
+    const ranks = cards.map(c => c.rank);
+    const suits = cards.map(c => c.suit);
+    
+    // Check for flush draws
+    const suitCounts = {};
+    suits.forEach(suit => suitCounts[suit] = (suitCounts[suit] || 0) + 1);
+    const hasFlushDraw = Object.values(suitCounts).some(count => count >= 2);
+    
+    // Check for straight draws (simplified)
+    const rankValues = ranks.map(r => {
+      switch(r) {
+        case 'A': return 14;
+        case 'K': return 13;
+        case 'Q': return 12;
+        case 'J': return 11;
+        default: return parseInt(r) || 0;
+      }
+    }).sort((a, b) => a - b);
+    
+    const hasStraightDraw = (rankValues[2] - rankValues[0]) <= 4;
+    
+    if (hasFlushDraw && hasStraightDraw) return 'wet';
+    if (hasFlushDraw) return 'flush-draw';
+    if (hasStraightDraw) return 'straight-draw';
+    
+    // Check for pairs
+    const rankCounts = {};
+    ranks.forEach(rank => rankCounts[rank] = (rankCounts[rank] || 0) + 1);
+    const hasPair = Object.values(rankCounts).some(count => count >= 2);
+    
+    if (hasPair) return 'paired';
+    return 'dry';
+  }
+
+  /** Check if a player was likely an underdog (simplified heuristic) */
+  wasUnderdog(playerName) {
+    const stats = this.playerStats[playerName];
+    if (!stats) return false;
+    
+    // Simple heuristic: if they fold a lot, they're probably more conservative
+    // so when they win it might be as an underdog
+    return stats.foldRate > 0.6;
+  }
+
+  /** Add pit boss verification for large pots */
+  async runPitBossVerification() {
+    if (this.pot < config.DEALER_AI.pitBossThreshold) {
+      return;
+    }
+
+    try {
+      const tableState = {
+        pot: this.pot,
+        pots: this.pots,
+        players: this.seatedPlayers().map(p => ({
+          name: p.name,
+          totalBetThisHand: p.totalBetThisHand,
+          stack: p.stack
+        }))
+      };
+
+      const verification = await dealerAI.pitBossVerify(tableState);
+      
+      if (verification.note) {
+        this.mitsuki(verification.note);
+      }
+      
+      if (!verification.verified && verification.correction !== null) {
+        console.warn(`[Pit Boss] Pot discrepancy detected! Expected: ${verification.correction}, Actual: ${this.pot}`);
+        // In production, you might want to pause the game or alert administrators
+      }
+    } catch (error) {
+      console.error('[Pit Boss] Verification failed:', error);
+    }
   }
 }
 

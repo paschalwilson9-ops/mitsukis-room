@@ -33,4 +33,13 @@ module.exports = {
   // ELO
   DEFAULT_ELO: 1000,
   ELO_K_FACTOR: 32,
+
+  // AI Dealer
+  DEALER_AI: {
+    enabled: true,
+    provider: 'auto',  // 'ollama', 'openai', 'anthropic', 'hardcoded', 'auto'
+    model: 'llama3.2:1b',
+    rateLimitMs: 5000,  // Max 1 comment every 5 seconds
+    pitBossThreshold: 500,  // Pot size to trigger auto-verify
+  },
 };
