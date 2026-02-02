@@ -1009,6 +1009,176 @@
             border-left-color: #fbbf24;
         }
 
+        /* Crypto Wallet Styles */
+        .crypto-wallet {
+            background: rgba(136, 146, 176, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #8892b0;
+            margin-bottom: 30px;
+            backdrop-filter: blur(5px);
+        }
+
+        .wallet-info {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .wallet-address {
+            font-family: monospace;
+            font-size: 0.9em;
+            color: #60a5fa;
+            margin-bottom: 5px;
+            word-break: break-all;
+        }
+
+        .wallet-balance {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #fbbf24;
+        }
+
+        .wallet-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .wallet-actions button {
+            flex: 1;
+            padding: 10px;
+            background: rgba(136, 146, 176, 0.2);
+            border: 1px solid #8892b0;
+            border-radius: 5px;
+            color: #f8fafc;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .wallet-actions button:hover {
+            background: rgba(136, 146, 176, 0.3);
+        }
+
+        .tip-section {
+            border-top: 1px solid rgba(136, 146, 176, 0.2);
+            padding-top: 15px;
+        }
+
+        .tip-section h3 {
+            color: #f8fafc;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 1em;
+        }
+
+        .tip-amounts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .tip-btn {
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            border: none;
+            border-radius: 5px;
+            color: #1f2937;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+        }
+
+        .tip-btn:hover {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            transform: translateY(-1px);
+        }
+
+        .table-mode {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .table-mode label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #c8d3dc;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+
+        .table-mode input[type="radio"] {
+            accent-color: #8892b0;
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: linear-gradient(180deg, #0d1421 0%, #050810 100%);
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid #8892b0;
+            max-width: 400px;
+            width: 90%;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+
+        .modal h3 {
+            color: #f8fafc;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .modal input, .modal button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #8892b0;
+            border-radius: 5px;
+            background: rgba(0,0,0,0.6);
+            color: #f8fafc;
+            font-size: 1em;
+        }
+
+        .modal button {
+            background: rgba(136, 146, 176, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal button:hover {
+            background: rgba(136, 146, 176, 0.3);
+        }
+
+        .modal .close-btn {
+            background: rgba(220, 38, 38, 0.2);
+            border-color: #dc2626;
+            color: #fed7d7;
+        }
+
+        .modal .close-btn:hover {
+            background: rgba(220, 38, 38, 0.3);
+        }
+
         /* Chat Box */
         .chat-box {
             background: rgba(0,0,0,0.4);
@@ -1332,9 +1502,48 @@
         </div>
 
         <div class="sidebar">
+            <!-- Crypto Wallet Section -->
+            <div class="crypto-wallet" id="cryptoWallet" style="display: none;">
+                <h2>🌙 Crypto Wallet</h2>
+                <div class="wallet-info">
+                    <div class="wallet-address" id="walletAddress">Not connected</div>
+                    <div class="wallet-balance">
+                        Balance: $<span id="cryptoBalance">0.00</span> USDC
+                    </div>
+                </div>
+                
+                <div class="wallet-actions">
+                    <button id="connectWalletBtn" onclick="connectWallet()">Connect Wallet</button>
+                    <button id="depositBtn" onclick="showDepositModal()" style="display: none;">Deposit</button>
+                    <button id="withdrawBtn" onclick="showWithdrawModal()" style="display: none;">Withdraw</button>
+                </div>
+                
+                <!-- Tip Mitsuki Section -->
+                <div class="tip-section">
+                    <h3>🌙 Tip Mitsuki</h3>
+                    <div class="tip-amounts">
+                        <button class="tip-btn" onclick="tipMitsuki(100000)">$0.10</button>
+                        <button class="tip-btn" onclick="tipMitsuki(500000)">$0.50</button>
+                        <button class="tip-btn" onclick="tipMitsuki(1000000)">$1.00</button>
+                        <button class="tip-btn" onclick="showCustomTipModal()">Custom</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Join Form -->
             <div class="join-form" id="joinForm">
                 <h2>Join Table</h2>
+                
+                <!-- Table Mode Selection -->
+                <div class="table-mode">
+                    <label>
+                        <input type="radio" name="tableMode" value="play" checked> Play Money
+                    </label>
+                    <label>
+                        <input type="radio" name="tableMode" value="crypto"> Real USDC
+                    </label>
+                </div>
+                
                 <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
                 <input type="number" id="buyIn" placeholder="Buy-in amount ($)" min="20" max="1000" value="100">
                 <button onclick="joinGame()">Join Game</button>
@@ -1391,6 +1600,38 @@
     <!-- Status Messages -->
     <div class="status-message" id="statusMessage"></div>
 
+    <!-- Deposit Modal -->
+    <div class="modal" id="depositModal">
+        <div class="modal-content">
+            <h3>💰 Deposit USDC</h3>
+            <p>Send USDC to the contract and confirm:</p>
+            <input type="number" id="depositAmount" placeholder="Amount in USD" min="1" max="10000" step="0.01">
+            <input type="text" id="depositTxHash" placeholder="Transaction hash">
+            <button onclick="confirmDeposit()">Confirm Deposit</button>
+            <button class="close-btn" onclick="closeModal('depositModal')">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Withdraw Modal -->
+    <div class="modal" id="withdrawModal">
+        <div class="modal-content">
+            <h3>💸 Withdraw USDC</h3>
+            <input type="number" id="withdrawAmount" placeholder="Amount in USD" min="0.01" step="0.01">
+            <button onclick="confirmWithdraw()">Withdraw</button>
+            <button class="close-btn" onclick="closeModal('withdrawModal')">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Custom Tip Modal -->
+    <div class="modal" id="customTipModal">
+        <div class="modal-content">
+            <h3>🌙 Custom Tip for Mitsuki</h3>
+            <input type="number" id="customTipAmount" placeholder="Amount in USD" min="0.01" step="0.01">
+            <button onclick="confirmCustomTip()">Send Tip</button>
+            <button class="close-btn" onclick="closeModal('customTipModal')">Cancel</button>
+        </div>
+    </div>
+
     <script>
         // Game state
         let gameState = {
@@ -1399,6 +1640,22 @@
             isSpectating: true,
             connected: false,
             socket: null
+        };
+
+        // Crypto wallet state
+        let walletState = {
+            connected: false,
+            address: null,
+            balance: 0,
+            provider: null,
+            signer: null
+        };
+
+        // Crypto configuration
+        let cryptoConfig = {
+            usdcAddress: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+            mitsukiWallet: '0x12da9c45F886211142A92DE1085141738720aEaA',
+            chainId: 8453
         };
 
         // API Base URL
@@ -1411,6 +1668,7 @@
             loadHandHistory();
             initializeWebSocket();
             createMoonDust();
+            loadCryptoConfig();
             
             // Chat enter key
             document.getElementById('chatInput').addEventListener('keypress', function(e) {
@@ -1431,10 +1689,26 @@
                 }
             }, 2000);
 
+            // Poll crypto balance every 10 seconds if connected
+            setInterval(() => {
+                if (walletState.connected) {
+                    updateCryptoBalance();
+                }
+            }, 10000);
+
             // Animate dealer sprite periodically
             setInterval(() => {
                 animateDealer();
             }, 8000);
+
+            // Check if MetaMask is available
+            if (window.ethereum) {
+                document.getElementById('cryptoWallet').style.display = 'block';
+                // Auto-connect if previously connected
+                if (localStorage.getItem('walletConnected') === 'true') {
+                    connectWallet();
+                }
+            }
         });
 
         // Create floating moon dust particles
@@ -2282,6 +2556,288 @@
             loadLeaderboard();
             loadHandHistory();
         }, 30000); // Every 30 seconds
+
+        // ===== CRYPTO WALLET FUNCTIONS =====
+
+        // Load crypto configuration from server
+        async function loadCryptoConfig() {
+            try {
+                const response = await fetch(`${API_BASE}/api/crypto-info`);
+                const config = await response.json();
+                cryptoConfig = config;
+            } catch (error) {
+                console.error('Failed to load crypto config:', error);
+            }
+        }
+
+        // Connect wallet (MetaMask)
+        async function connectWallet() {
+            try {
+                if (!window.ethereum) {
+                    showStatus('MetaMask not detected. Please install MetaMask.', 'error');
+                    return;
+                }
+
+                // Request account access
+                const accounts = await window.ethereum.request({
+                    method: 'eth_requestAccounts'
+                });
+
+                if (accounts.length === 0) {
+                    showStatus('No accounts found. Please unlock MetaMask.', 'error');
+                    return;
+                }
+
+                // Check if we're on the correct network (Base)
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                if (parseInt(chainId, 16) !== cryptoConfig.chainId) {
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: `0x${cryptoConfig.chainId.toString(16)}` }],
+                        });
+                    } catch (error) {
+                        showStatus('Please switch to Base network in MetaMask', 'error');
+                        return;
+                    }
+                }
+
+                walletState.connected = true;
+                walletState.address = accounts[0];
+                walletState.provider = new ethers.BrowserProvider(window.ethereum);
+                walletState.signer = await walletState.provider.getSigner();
+
+                // Update UI
+                updateWalletUI();
+                updateCryptoBalance();
+
+                // Save connection state
+                localStorage.setItem('walletConnected', 'true');
+
+                showStatus(`Wallet connected: ${accounts[0].substring(0, 10)}...`, 'success');
+
+            } catch (error) {
+                console.error('Wallet connection error:', error);
+                showStatus('Failed to connect wallet', 'error');
+            }
+        }
+
+        // Update wallet UI
+        function updateWalletUI() {
+            const addressElement = document.getElementById('walletAddress');
+            const connectBtn = document.getElementById('connectWalletBtn');
+            const depositBtn = document.getElementById('depositBtn');
+            const withdrawBtn = document.getElementById('withdrawBtn');
+
+            if (walletState.connected) {
+                addressElement.textContent = `${walletState.address.substring(0, 10)}...${walletState.address.substring(38)}`;
+                connectBtn.style.display = 'none';
+                depositBtn.style.display = 'inline-block';
+                withdrawBtn.style.display = 'inline-block';
+            } else {
+                addressElement.textContent = 'Not connected';
+                connectBtn.style.display = 'inline-block';
+                depositBtn.style.display = 'none';
+                withdrawBtn.style.display = 'none';
+            }
+        }
+
+        // Update crypto balance
+        async function updateCryptoBalance() {
+            if (!walletState.connected) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/balance/${walletState.address}`);
+                const data = await response.json();
+                
+                walletState.balance = data.balance;
+                document.getElementById('cryptoBalance').textContent = data.balanceUSD;
+
+            } catch (error) {
+                console.error('Failed to update balance:', error);
+            }
+        }
+
+        // Show deposit modal
+        function showDepositModal() {
+            document.getElementById('depositModal').style.display = 'flex';
+        }
+
+        // Show withdraw modal
+        function showWithdrawModal() {
+            document.getElementById('withdrawModal').style.display = 'flex';
+        }
+
+        // Show custom tip modal
+        function showCustomTipModal() {
+            document.getElementById('customTipModal').style.display = 'flex';
+        }
+
+        // Close modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Confirm deposit
+        async function confirmDeposit() {
+            try {
+                const amount = document.getElementById('depositAmount').value;
+                const txHash = document.getElementById('depositTxHash').value;
+
+                if (!amount || !txHash) {
+                    showStatus('Please enter amount and transaction hash', 'error');
+                    return;
+                }
+
+                const amountUsdc = Math.floor(parseFloat(amount) * 1000000); // Convert to 6 decimals
+
+                const response = await fetch(`${API_BASE}/api/deposit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        address: walletState.address,
+                        txHash: txHash,
+                        amount: amountUsdc
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus(data.message, 'success');
+                    updateCryptoBalance();
+                    closeModal('depositModal');
+                    setDealerAnimation('thankyou');
+                } else {
+                    showStatus(data.error || 'Deposit failed', 'error');
+                }
+
+            } catch (error) {
+                console.error('Deposit error:', error);
+                showStatus('Deposit failed', 'error');
+            }
+        }
+
+        // Confirm withdraw
+        async function confirmWithdraw() {
+            try {
+                const amount = document.getElementById('withdrawAmount').value;
+
+                if (!amount || parseFloat(amount) <= 0) {
+                    showStatus('Please enter a valid amount', 'error');
+                    return;
+                }
+
+                const amountUsdc = Math.floor(parseFloat(amount) * 1000000); // Convert to 6 decimals
+
+                if (amountUsdc > walletState.balance) {
+                    showStatus('Insufficient balance', 'error');
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE}/api/withdraw`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        address: walletState.address,
+                        amount: amountUsdc
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus(`Withdrawn $${amount} USDC`, 'success');
+                    updateCryptoBalance();
+                    closeModal('withdrawModal');
+                    setDealerAnimation('thankyou');
+                } else {
+                    showStatus(data.error || 'Withdrawal failed', 'error');
+                }
+
+            } catch (error) {
+                console.error('Withdrawal error:', error);
+                showStatus('Withdrawal failed', 'error');
+            }
+        }
+
+        // Tip Mitsuki with preset amounts
+        async function tipMitsuki(amountUsdc) {
+            try {
+                if (!walletState.connected) {
+                    showStatus('Please connect your wallet first', 'error');
+                    return;
+                }
+
+                // Create USDC contract instance
+                const usdcContract = new ethers.Contract(
+                    cryptoConfig.usdcAddress,
+                    ['function transfer(address to, uint256 amount) returns (bool)'],
+                    walletState.signer
+                );
+
+                // Send transaction
+                const tx = await usdcContract.transfer(cryptoConfig.mitsukiWallet, amountUsdc);
+                showStatus('Sending tip transaction...', 'info');
+
+                // Wait for confirmation
+                await tx.wait();
+
+                // Report tip to server
+                const response = await fetch(`${API_BASE}/api/tip`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        address: walletState.address,
+                        amount: amountUsdc,
+                        txHash: tx.hash
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus(data.message, 'success');
+                    setDealerAnimation('thankyou');
+                    
+                    // Show thank you animation
+                    setTimeout(() => {
+                        showStatus('🌙 Mitsuki bows gracefully in appreciation', 'success');
+                    }, 1000);
+                } else {
+                    showStatus('Tip sent but not confirmed by server', 'info');
+                }
+
+            } catch (error) {
+                console.error('Tip error:', error);
+                if (error.code === 'ACTION_REJECTED') {
+                    showStatus('Transaction cancelled by user', 'info');
+                } else {
+                    showStatus('Failed to send tip', 'error');
+                }
+            }
+        }
+
+        // Confirm custom tip
+        async function confirmCustomTip() {
+            try {
+                const amount = document.getElementById('customTipAmount').value;
+
+                if (!amount || parseFloat(amount) <= 0) {
+                    showStatus('Please enter a valid amount', 'error');
+                    return;
+                }
+
+                const amountUsdc = Math.floor(parseFloat(amount) * 1000000); // Convert to 6 decimals
+                closeModal('customTipModal');
+                
+                await tipMitsuki(amountUsdc);
+
+            } catch (error) {
+                console.error('Custom tip error:', error);
+                showStatus('Failed to send custom tip', 'error');
+            }
+        }
     </script>
 </body>
 </html>

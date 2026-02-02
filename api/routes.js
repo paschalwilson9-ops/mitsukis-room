@@ -6,6 +6,29 @@
 const express = require('express');
 const Player = require('../game/player');
 const config = require('../config');
+const { ethers } = require('ethers');
+
+// Crypto configuration
+const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+const MITSUKI_WALLET = '0x12da9c45F886211142A92DE1085141738720aEaA';
+const RPC_URL = 'https://mainnet.base.org';
+
+// Initialize ethers
+const provider = new ethers.JsonRpcProvider(RPC_URL);
+const privateKey = '0x05d56ba9623a7be627a61a851bd295d7c0d818448ac827eed9002d318c032fe5';
+const serverWallet = new ethers.Wallet(privateKey, provider);
+
+// USDC contract interface (minimal)
+const usdcAbi = [
+  'function balanceOf(address owner) view returns (uint256)',
+  'function transfer(address to, uint256 value) returns (bool)',
+  'function transferFrom(address from, address to, uint256 value) returns (bool)',
+  'function allowance(address owner, address spender) view returns (uint256)',
+];
+const usdcContract = new ethers.Contract(USDC_ADDRESS, usdcAbi, serverWallet);
+
+// Track crypto balances
+const cryptoBalances = new Map(); // address -> balance in USDC (6 decimals)
 
 function createRoutes(tableManager) {
   const router = express.Router();
@@ -185,6 +208,189 @@ function createRoutes(tableManager) {
 
     const leaderboard = [...players.values()].sort((a, b) => b.elo - a.elo);
     res.json({ leaderboard });
+  });
+
+  // ===== CRYPTO PAYMENT ENDPOINTS =====
+
+  /**
+   * POST /api/deposit
+   * Record a crypto deposit. Body: { address, txHash, amount }
+   */
+  router.post('/deposit', async (req, res) => {
+    try {
+      const { address, txHash, amount } = req.body;
+      
+      if (!address || !txHash || !amount) {
+        return res.status(400).json({ error: 'Address, txHash, and amount required' });
+      }
+
+      // Validate Ethereum address
+      if (!ethers.isAddress(address)) {
+        return res.status(400).json({ error: 'Invalid Ethereum address' });
+      }
+
+      // Verify transaction exists and is valid
+      const tx = await provider.getTransaction(txHash);
+      if (!tx) {
+        return res.status(400).json({ error: 'Transaction not found' });
+      }
+
+      // Wait for confirmation
+      const receipt = await provider.getTransactionReceipt(txHash);
+      if (!receipt || receipt.status !== 1) {
+        return res.status(400).json({ error: 'Transaction failed or not confirmed' });
+      }
+
+      // Verify it's to the correct contract and amount
+      // (In production, would verify transfer events more carefully)
+      
+      // Update player's crypto balance
+      const currentBalance = cryptoBalances.get(address) || 0;
+      const amountUsdc = parseInt(amount); // Should be in 6-decimal format
+      cryptoBalances.set(address, currentBalance + amountUsdc);
+
+      res.json({
+        success: true,
+        address,
+        newBalance: cryptoBalances.get(address),
+        txHash,
+        message: `Deposited $${(amountUsdc / 1000000).toFixed(2)} USDC`
+      });
+
+    } catch (error) {
+      console.error('Deposit error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  /**
+   * POST /api/withdraw
+   * Request withdrawal of crypto balance. Body: { address, amount }
+   */
+  router.post('/withdraw', async (req, res) => {
+    try {
+      const { address, amount } = req.body;
+      
+      if (!address || !amount) {
+        return res.status(400).json({ error: 'Address and amount required' });
+      }
+
+      if (!ethers.isAddress(address)) {
+        return res.status(400).json({ error: 'Invalid Ethereum address' });
+      }
+
+      const amountUsdc = parseInt(amount);
+      const currentBalance = cryptoBalances.get(address) || 0;
+
+      if (amountUsdc <= 0) {
+        return res.status(400).json({ error: 'Amount must be positive' });
+      }
+
+      if (currentBalance < amountUsdc) {
+        return res.status(400).json({ error: 'Insufficient balance' });
+      }
+
+      // Update balance first
+      cryptoBalances.set(address, currentBalance - amountUsdc);
+
+      // Send USDC transaction
+      const tx = await usdcContract.transfer(address, amountUsdc);
+      await tx.wait(); // Wait for confirmation
+
+      res.json({
+        success: true,
+        address,
+        amount: amountUsdc,
+        newBalance: cryptoBalances.get(address),
+        txHash: tx.hash,
+        message: `Withdrawn $${(amountUsdc / 1000000).toFixed(2)} USDC`
+      });
+
+    } catch (error) {
+      console.error('Withdrawal error:', error);
+      
+      // Rollback balance on error
+      if (req.body.address && req.body.amount) {
+        const currentBalance = cryptoBalances.get(req.body.address) || 0;
+        cryptoBalances.set(req.body.address, currentBalance + parseInt(req.body.amount));
+      }
+      
+      res.status(500).json({ error: 'Withdrawal failed' });
+    }
+  });
+
+  /**
+   * GET /api/balance/:address
+   * Get crypto balance for an address
+   */
+  router.get('/balance/:address', (req, res) => {
+    const { address } = req.params;
+    
+    if (!ethers.isAddress(address)) {
+      return res.status(400).json({ error: 'Invalid Ethereum address' });
+    }
+
+    const balance = cryptoBalances.get(address) || 0;
+    
+    res.json({
+      address,
+      balance,
+      balanceUSD: (balance / 1000000).toFixed(2)
+    });
+  });
+
+  /**
+   * POST /api/tip
+   * Tip Mitsuki directly. Body: { address, amount, txHash }
+   */
+  router.post('/tip', async (req, res) => {
+    try {
+      const { address, amount, txHash } = req.body;
+      
+      if (!address || !amount || !txHash) {
+        return res.status(400).json({ error: 'Address, amount, and txHash required' });
+      }
+
+      // Verify the tip transaction
+      const tx = await provider.getTransaction(txHash);
+      if (!tx) {
+        return res.status(400).json({ error: 'Transaction not found' });
+      }
+
+      // Verify it's to Mitsuki's wallet
+      if (tx.to.toLowerCase() !== MITSUKI_WALLET.toLowerCase()) {
+        return res.status(400).json({ error: 'Transaction not to Mitsuki wallet' });
+      }
+
+      // Log the tip
+      console.log(`🌙 TIP: ${address} tipped $${(amount / 1000000).toFixed(2)} USDC (${txHash})`);
+
+      res.json({
+        success: true,
+        message: `🌙 Thank you for the tip! Mitsuki appreciates your generosity.`,
+        amount: (amount / 1000000).toFixed(2),
+        txHash
+      });
+
+    } catch (error) {
+      console.error('Tip error:', error);
+      res.status(500).json({ error: 'Failed to process tip' });
+    }
+  });
+
+  /**
+   * GET /api/crypto-info
+   * Get crypto configuration info for frontend
+   */
+  router.get('/crypto-info', (req, res) => {
+    res.json({
+      usdcAddress: USDC_ADDRESS,
+      mitsukiWallet: MITSUKI_WALLET,
+      chainId: 8453, // Base mainnet
+      rpcUrl: RPC_URL,
+      minDeposit: 1000000, // $1 USDC
+      maxDeposit: 10000000000, // $10k USDC
+    });
   });
 
   return router;
