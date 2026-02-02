@@ -437,7 +437,17 @@ class Table {
 
     // Everyone is all-in or only one can act
     if (acting.length <= 1) {
-      // Deal remaining community cards and go to showdown
+      // If one player can still act and hasn't matched the bet, let them act first
+      if (acting.length === 1) {
+        const lastActor = acting[0];
+        if (lastActor.currentBet < this.currentBetLevel) {
+          // They still need to call/fold — give them a turn
+          this.currentPlayerIndex = lastActor.seat;
+          this.promptCurrentPlayer();
+          return;
+        }
+      }
+      // All bets settled — deal remaining community cards and go to showdown
       this.runOutBoard();
       return;
     }

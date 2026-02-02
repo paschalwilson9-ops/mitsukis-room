@@ -2972,8 +2972,11 @@
                 const raiseInput = document.getElementById('raiseInput');
                 raiseInput.min = minRaise;
                 raiseInput.max = maxRaise;
-                raiseInput.value = minRaise;
                 raiseInput.placeholder = minRaise;
+                // Only set default value if raise controls aren't currently open
+                if (!document.getElementById('raiseControls').classList.contains('visible')) {
+                    raiseInput.value = minRaise;
+                }
                 
                 // Track for preset buttons
                 _currentMinRaise = minRaise;
