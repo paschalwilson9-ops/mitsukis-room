@@ -6,8 +6,7 @@
     <title>🌙 Mitsuki's Room - Private Poker</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
     
-    <!-- Sound Effect Placeholders -->
-    <!--
+    <!-- Sound Effects -->
     <audio id="dealSound" preload="auto">
         <source src="/sounds/card-deal.mp3" type="audio/mpeg">
     </audio>
@@ -23,7 +22,9 @@
     <audio id="yourTurnSound" preload="auto">
         <source src="/sounds/your-turn.mp3" type="audio/mpeg">
     </audio>
-    -->
+    <audio id="checkSound" preload="auto">
+        <source src="/sounds/check.mp3" type="audio/mpeg">
+    </audio>
 
     <style>
         * {
@@ -1735,6 +1736,13 @@
         </div>
 
         <div class="sidebar">
+            <!-- Sound Controls -->
+            <div style="padding: 10px 15px; border-bottom: 1px solid rgba(136,146,176,0.15); display: flex; align-items: center; gap: 10px;">
+                <button id="muteToggleBtn" onclick="toggleMute()" style="background: rgba(136,146,176,0.15); border: 1px solid rgba(136,146,176,0.2); color: #c8d3dc; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; white-space: nowrap;">🔊 Mute</button>
+                <input type="range" min="0" max="1" step="0.05" value="0.3" oninput="setVolume(this.value)" style="flex: 1; accent-color: #8892b0; height: 4px;">
+                <span id="volumeLabel" style="font-size: 12px; color: #8892b0; min-width: 30px;">30%</span>
+            </div>
+
             <!-- Crypto Wallet Section -->
             <div class="crypto-wallet" id="cryptoWallet" style="display: none;">
                 <h2>🌙 Crypto Wallet</h2>
@@ -2556,6 +2564,10 @@
             if (key === _lastHoleKey) return; // unchanged — skip
             _lastHoleKey = key;
 
+            if (cards && cards.length > 0) {
+                playSound('dealSound');
+            }
+
             const container = document.getElementById('playerCards');
             container.innerHTML = '';
             
@@ -2694,16 +2706,31 @@
             return cardElement;
         }
 
-        // Play sound effect (when audio files are added)
+        // Sound settings
+        let soundMuted = false;
+        let soundVolume = 0.3;
+
+        // Play sound effect
         function playSound(soundId) {
-            // Uncomment when audio files are available
-            /*
+            if (soundMuted) return;
             const audio = document.getElementById(soundId);
             if (audio) {
+                audio.volume = soundVolume;
                 audio.currentTime = 0;
                 audio.play().catch(e => console.log('Sound play failed:', e));
             }
-            */
+        }
+
+        function toggleMute() {
+            soundMuted = !soundMuted;
+            const btn = document.getElementById('muteToggleBtn');
+            if (btn) btn.textContent = soundMuted ? '🔇 Unmute' : '🔊 Mute';
+        }
+
+        function setVolume(val) {
+            soundVolume = parseFloat(val);
+            const label = document.getElementById('volumeLabel');
+            if (label) label.textContent = Math.round(soundVolume * 100) + '%';
         }
 
         // Perform game action
@@ -2715,6 +2742,9 @@
                 switch (action) {
                     case 'fold':
                         playSound('foldSound');
+                        break;
+                    case 'check':
+                        playSound('checkSound');
                         break;
                     case 'call':
                     case 'raise':
