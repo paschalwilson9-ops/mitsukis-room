@@ -3,7 +3,7 @@ require('dotenv').config();
 
 // Configuration
 const RPC_URL = 'https://mainnet.base.org';
-const PRIVATE_KEY = '0x05d56ba9623a7be627a61a851bd295d7c0d818448ac827eed9002d318c032fe5';
+const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const DEALER_ADDRESS = '0x12da9c45F886211142A92DE1085141738720aEaA'; // Server wallet
 const ADMIN_ADDRESS = '0x12da9c45F886211142A92DE1085141738720aEaA';   // Same as dealer for simplicity
