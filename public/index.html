@@ -170,11 +170,13 @@
         /* Mitsuki Dealer Sprite */
         .dealer-sprite {
             position: absolute;
-            top: 25%;
+            top: 10%;
             left: 50%;
             transform: translateX(-50%);
             z-index: 10;
             transition: all 0.5s ease;
+            width: 200px;
+            height: 200px;
         }
 
         .dealer-glow {
@@ -182,71 +184,49 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 200px;
-            height: 200px;
-            background: radial-gradient(circle, rgba(136, 146, 176, 0.1) 0%, transparent 70%);
+            width: 260px;
+            height: 260px;
+            background: radial-gradient(circle, rgba(136, 146, 176, 0.15) 0%, transparent 70%);
             border-radius: 50%;
             z-index: -1;
         }
 
-        .dealer-sprite.idle #dealer-body {
-            transform: translateY(0px);
+        .dealer-sprite img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: opacity 0.4s ease;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
 
-        .dealer-sprite.idle #dealer-left-arm {
-            transform: rotate(-10deg);
-        }
-
-        .dealer-sprite.idle #dealer-right-arm {
-            transform: rotate(10deg);
-        }
-
-        .dealer-sprite.idle #dealer-eyes {
-            opacity: 1;
-        }
-
-        .dealer-sprite.idle #dealer-smile {
-            opacity: 1;
-        }
-
-        .dealer-sprite.dealing #dealer-body {
-            transform: translateY(-2px) translateX(5px);
-        }
-
-        .dealer-sprite.dealing #dealer-left-arm {
-            transform: rotate(-45deg) translateY(-10px);
-        }
-
-        .dealer-sprite.dealing #dealer-right-arm {
-            transform: rotate(10deg);
-        }
-
-        .dealer-sprite.dealing #dealer-eyes {
-            opacity: 1;
-        }
-
-        .dealer-sprite.dealing #dealer-smile {
-            opacity: 0.8;
-        }
-
-        .dealer-sprite.thankyou #dealer-body {
-            transform: translateY(5px);
-        }
-
-        .dealer-sprite.thankyou #dealer-left-arm {
-            transform: rotate(-15deg);
-        }
-
-        .dealer-sprite.thankyou #dealer-right-arm {
-            transform: rotate(15deg);
-        }
-
-        .dealer-sprite.thankyou #dealer-eyes {
+        .dealer-sprite img.hidden {
             opacity: 0;
         }
 
-        .dealer-sprite.thankyou #dealer-smile {
+        .dealer-sprite img.visible {
             opacity: 1;
+        }
+
+        .dealer-sprite.dealing {
+            animation: dealBounce 0.6s ease;
+        }
+
+        .dealer-sprite.thankyou {
+            animation: thankBow 1.2s ease;
+        }
+
+        @keyframes dealBounce {
+            0% { transform: translateX(-50%) translateY(0); }
+            30% { transform: translateX(-50%) translateY(-8px); }
+            100% { transform: translateX(-50%) translateY(0); }
+        }
+
+        @keyframes thankBow {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.05); }
+            100% { transform: translateX(-50%) scale(1); }
         }
 
         .community-cards {
@@ -672,73 +652,8 @@
                 <!-- Mitsuki Dealer Sprite -->
                 <div class="dealer-sprite idle" id="dealerSprite">
                     <div class="dealer-glow"></div>
-                    <svg width="140" height="150" viewBox="0 0 140 150" xmlns="http://www.w3.org/2000/svg">
-                        <!-- Background glow -->
-                        <defs>
-                            <radialGradient id="moonGlow" cx="50%" cy="50%" r="50%">
-                                <stop offset="0%" style="stop-color:#8892b0;stop-opacity:0.2"/>
-                                <stop offset="100%" style="stop-color:transparent;stop-opacity:0"/>
-                            </radialGradient>
-                            <linearGradient id="hairGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:#f8fafc"/>
-                                <stop offset="50%" style="stop-color:#e2e8f0"/>
-                                <stop offset="100%" style="stop-color:#cbd5e0"/>
-                            </linearGradient>
-                            <linearGradient id="outfitGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:#2d3748"/>
-                                <stop offset="50%" style="stop-color:#1a202c"/>
-                                <stop offset="100%" style="stop-color:#171923"/>
-                            </linearGradient>
-                        </defs>
-                        
-                        <!-- Body glow -->
-                        <ellipse cx="70" cy="75" rx="60" ry="70" fill="url(#moonGlow)"/>
-                        
-                        <!-- Body -->
-                        <g id="dealer-body" style="transform-origin: 70px 75px; transition: all 0.3s ease;">
-                            <!-- Dress/outfit -->
-                            <path d="M45 80 Q70 85 95 80 L90 130 Q70 135 50 130 Z" fill="url(#outfitGradient)" stroke="#8892b0" stroke-width="1"/>
-                            
-                            <!-- Head -->
-                            <ellipse cx="70" cy="45" rx="18" ry="20" fill="#fef5e7" stroke="#e2e8f0" stroke-width="1"/>
-                            
-                            <!-- Hair -->
-                            <path d="M50 35 Q70 25 90 35 Q90 45 85 55 Q75 50 70 50 Q65 50 55 55 Q50 45 50 35" fill="url(#hairGradient)" stroke="#cbd5e0" stroke-width="1"/>
-                            
-                            <!-- Crescent moon hair clip -->
-                            <path d="M75 32 Q80 28 82 32 Q80 36 75 32" fill="#8892b0" stroke="#f8fafc" stroke-width="1"/>
-                            <circle cx="78" cy="32" r="1.5" fill="#f8fafc"/>
-                            
-                            <!-- Eyes -->
-                            <g id="dealer-eyes" style="transition: opacity 0.3s ease;">
-                                <ellipse cx="65" cy="42" rx="2" ry="3" fill="#2d3748"/>
-                                <ellipse cx="75" cy="42" rx="2" ry="3" fill="#2d3748"/>
-                                <ellipse cx="65" cy="41" rx="0.8" ry="1" fill="#f8fafc"/>
-                                <ellipse cx="75" cy="41" rx="0.8" ry="1" fill="#f8fafc"/>
-                            </g>
-                            
-                            <!-- Smile -->
-                            <path id="dealer-smile" d="M66 48 Q70 52 74 48" stroke="#e53e3e" stroke-width="1.5" fill="none" style="transition: opacity 0.3s ease;"/>
-                            
-                            <!-- Left arm -->
-                            <g id="dealer-left-arm" style="transform-origin: 55px 75px; transition: all 0.3s ease;">
-                                <ellipse cx="50" cy="75" rx="6" ry="15" fill="#fef5e7" stroke="#e2e8f0" stroke-width="1"/>
-                                <ellipse cx="48" cy="85" rx="4" ry="8" fill="#fef5e7" stroke="#e2e8f0" stroke-width="1"/>
-                            </g>
-                            
-                            <!-- Right arm -->
-                            <g id="dealer-right-arm" style="transform-origin: 85px 75px; transition: all 0.3s ease;">
-                                <ellipse cx="90" cy="75" rx="6" ry="15" fill="#fef5e7" stroke="#e2e8f0" stroke-width="1"/>
-                                <ellipse cx="92" cy="85" rx="4" ry="8" fill="#fef5e7" stroke="#e2e8f0" stroke-width="1"/>
-                            </g>
-                            
-                            <!-- Vest details -->
-                            <rect x="60" y="80" width="20" height="30" fill="none" stroke="#8892b0" stroke-width="1"/>
-                            <circle cx="65" cy="90" r="1.5" fill="#8892b0"/>
-                            <circle cx="75" cy="90" r="1.5" fill="#8892b0"/>
-                            <circle cx="70" cy="100" r="1.5" fill="#8892b0"/>
-                        </g>
-                    </svg>
+                    <img src="/img/dealer-idle.png" id="dealer-idle-img" class="visible" alt="Mitsuki - Idle">
+                    <img src="/img/dealer-thankyou.jpg" id="dealer-thankyou-img" class="hidden" alt="Mitsuki - Thank You">
                 </div>
                 
                 <!-- Community Cards -->
@@ -886,21 +801,45 @@
             setTimeout(createMoonDust, 25000);
         }
 
+        // Show a specific dealer sprite
+        function showDealerState(state) {
+            const idleImg = document.getElementById('dealer-idle-img');
+            const thankyouImg = document.getElementById('dealer-thankyou-img');
+            
+            if (!idleImg || !thankyouImg) return;
+            
+            // Hide all
+            idleImg.className = 'hidden';
+            thankyouImg.className = 'hidden';
+            
+            switch (state) {
+                case 'thankyou':
+                    thankyouImg.className = 'visible';
+                    break;
+                case 'dealing':
+                    // Use idle for dealing until we get a dealing PNG
+                    idleImg.className = 'visible';
+                    break;
+                default:
+                    idleImg.className = 'visible';
+            }
+        }
+
         // Animate dealer sprite based on game state
         function animateDealer() {
             const dealer = document.getElementById('dealerSprite');
             if (!dealer) return;
             
-            // Random idle animations
-            const animations = ['idle', 'thankyou'];
-            const randomAnimation = animations[Math.floor(Math.random() * animations.length)];
-            
-            dealer.className = `dealer-sprite ${randomAnimation}`;
-            
-            // Return to idle after 2 seconds
-            setTimeout(() => {
-                dealer.className = 'dealer-sprite idle';
-            }, 2000);
+            // Occasionally show thankyou as idle animation
+            const shouldThank = Math.random() < 0.3;
+            if (shouldThank) {
+                dealer.className = 'dealer-sprite thankyou';
+                showDealerState('thankyou');
+                setTimeout(() => {
+                    dealer.className = 'dealer-sprite idle';
+                    showDealerState('idle');
+                }, 2000);
+            }
         }
 
         // Set dealer animation based on game action
@@ -911,18 +850,23 @@
             switch (action) {
                 case 'dealing':
                     dealer.className = 'dealer-sprite dealing';
+                    showDealerState('dealing');
                     setTimeout(() => {
                         dealer.className = 'dealer-sprite idle';
+                        showDealerState('idle');
                     }, 1500);
                     break;
                 case 'thankyou':
                     dealer.className = 'dealer-sprite thankyou';
+                    showDealerState('thankyou');
                     setTimeout(() => {
                         dealer.className = 'dealer-sprite idle';
+                        showDealerState('idle');
                     }, 2000);
                     break;
                 default:
                     dealer.className = 'dealer-sprite idle';
+                    showDealerState('idle');
             }
         }
 
