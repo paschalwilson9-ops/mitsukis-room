@@ -17,7 +17,7 @@ class Table {
     this.deck = new Deck();
     this.communityCards = [];
     this.pot = 0;
-    this.sidePots = [];          // { amount, eligible: [playerIds] }
+    this.pots = [];              // Array of { amount, eligible: [seatIndexes], name: 'Main Pot' }
     this.phase = 'waiting';
     this.dealerSeat = -1;        // Button position
     this.currentPlayerIndex = -1;// Index into activePlayers
@@ -121,7 +121,7 @@ class Table {
     this.currentHandLog = [];
     this.communityCards = [];
     this.pot = 0;
-    this.sidePots = [];
+    this.pots = [];
     this.currentBetLevel = 0;
     this.minRaise = config.BIG_BLIND;
 
@@ -372,8 +372,11 @@ class Table {
         const callAmount = player.bet(toCall);
         this.pot += callAmount;
         player.lastAction = 'call';
+        
         if (player.status === 'all-in') {
           this.mitsuki(`${player.name} calls ${callAmount} and is all-in!`);
+          // Recalculate pots when someone goes all-in
+          this.calculatePots();
         } else {
           this.mitsuki(`${player.name} calls ${callAmount}.`);
         }
@@ -382,29 +385,51 @@ class Table {
 
       case 'raise': {
         const raiseTotal = amount; // Total bet amount (not raise increment)
-        if (raiseTotal < this.currentBetLevel + this.minRaise && raiseTotal < player.stack + player.currentBet) {
+        const originalStack = player.stack + player.currentBet;
+        
+        // Check if this is a valid raise amount
+        if (raiseTotal < this.currentBetLevel + this.minRaise && raiseTotal < originalStack) {
           return { error: `Minimum raise is to ${this.currentBetLevel + this.minRaise}` };
         }
+        
         const raiseAmount = raiseTotal - player.currentBet;
         const actualBet = player.bet(raiseAmount);
         this.pot += actualBet;
 
-        // Update min raise (difference between new bet and old bet level)
-        const raiseIncrement = player.currentBet - this.currentBetLevel;
-        if (raiseIncrement > this.minRaise) {
-          this.minRaise = raiseIncrement;
-        }
+        const oldBetLevel = this.currentBetLevel;
         this.currentBetLevel = player.currentBet;
-        player.lastAction = 'raise';
-
-        if (player.status === 'all-in') {
-          this.mitsuki(`${player.name} raises to ${player.currentBet} — ALL IN! Bold move.`);
+        
+        // Determine if this was an all-in
+        const isAllIn = player.status === 'all-in';
+        
+        if (isAllIn) {
+          // Check if the all-in constitutes a full raise
+          const raiseIncrement = player.currentBet - oldBetLevel;
+          const isFullRaise = raiseIncrement >= this.minRaise;
+          
+          if (isFullRaise) {
+            // Full raise - reopens action to all players
+            this.minRaise = raiseIncrement;
+            this._lastRaiserSeat = player.seat;
+            player.lastAction = 'raise';
+            this.mitsuki(`${player.name} raises to ${player.currentBet} — ALL IN! Bold move.`);
+          } else {
+            // Incomplete raise - doesn't reopen action
+            player.lastAction = 'call';
+            this.mitsuki(`${player.name} calls ${actualBet} — ALL IN!`);
+          }
+          
+          // Recalculate pots when someone goes all-in
+          this.calculatePots();
         } else {
+          // Normal raise
+          const raiseIncrement = player.currentBet - oldBetLevel;
+          this.minRaise = raiseIncrement;
+          this._lastRaiserSeat = player.seat;
+          player.lastAction = 'raise';
           this.mitsuki(`${player.name} raises to ${player.currentBet}.`);
         }
 
-        // Reset action back — everyone else needs to act again
-        this._lastRaiserSeat = player.seat;
         break;
       }
 
@@ -592,10 +617,14 @@ class Table {
       return;
     }
 
+    // Calculate final pot distribution
+    this.calculatePots();
+
     // Evaluate hands
     const playerHands = contenders.map(p => ({
       player: p,
       hand: evaluateHand([...p.holeCards, ...this.communityCards]),
+      seat: p.seat
     }));
 
     // Show all hands
@@ -603,24 +632,41 @@ class Table {
       this.mitsuki(`${ph.player.name} shows ${cardsToString(ph.player.holeCards)} — ${ph.hand.name}`);
     }
 
-    // Calculate side pots
-    const pots = this.calculateSidePots(contenders);
+    const awards = [];
 
-    // Award each pot
-    for (const pot of pots) {
-      const eligible = playerHands.filter(ph =>
-        pot.eligible.includes(ph.player.id)
-      );
+    // Award each pot separately
+    for (const pot of this.pots) {
+      // Find eligible players for this pot
+      const eligible = playerHands.filter(ph => pot.eligible.includes(ph.seat));
+      
+      if (eligible.length === 0) continue;
+
+      // Determine winners among eligible players
       const winners = determineWinners(eligible);
 
-      const share = Math.floor(pot.amount / winners.length);
-      const remainder = pot.amount - (share * winners.length);
+      // Distribute pot among winners
+      const { distributions, remainder } = this.distributePot(pot.amount, winners, pot.eligible);
+      
+      for (const dist of distributions) {
+        dist.player.award(dist.amount);
+        dist.player.handsWon++;
+        awards.push({
+          player: dist.player.name,
+          amount: dist.amount,
+          pot: pot.name,
+          hand: dist.hand.name
+        });
+        
+        if (pot.amount > 0) {
+          this.mitsuki(`🏆 ${dist.player.name} wins ${dist.amount} from ${pot.name} with ${dist.hand.name}!`);
+        }
+      }
 
-      for (let i = 0; i < winners.length; i++) {
-        const award = share + (i === 0 ? remainder : 0);
-        winners[i].player.award(award);
-        winners[i].player.handsWon++;
-        this.mitsuki(`🏆 ${winners[i].player.name} wins ${award} with ${winners[i].hand.name}!`);
+      // Award remainder to first winner closest to dealer button
+      if (remainder > 0 && distributions.length > 0) {
+        const oddChipWinner = this.getOddChipWinner(distributions.map(d => d.player));
+        oddChipWinner.award(remainder);
+        this.mitsuki(`💫 ${oddChipWinner.name} receives the odd chip (${remainder}).`);
       }
     }
 
@@ -633,6 +679,8 @@ class Table {
         rank: ph.hand.rank,
       })),
       communityCards: this.communityCards,
+      awards: awards,
+      pots: this.pots
     });
 
     // Record hand history
@@ -645,79 +693,178 @@ class Table {
     this.scheduleNextHand();
   }
 
+  /** Distribute a pot amount among winners, handling odd chips */
+  distributePot(amount, winners, eligibleSeats) {
+    const distributions = [];
+    const share = Math.floor(amount / winners.length);
+    const remainder = amount - (share * winners.length);
+
+    for (const winner of winners) {
+      distributions.push({
+        player: winner.player,
+        amount: share,
+        hand: winner.hand
+      });
+    }
+
+    return { distributions, remainder };
+  }
+
+  /** Get the player who should receive the odd chip (closest to dealer's left) */
+  getOddChipWinner(winners) {
+    if (winners.length <= 1) return winners[0];
+
+    // Find the winner closest to the left of the dealer button
+    let closestPlayer = winners[0];
+    let shortestDistance = this.getDistanceFromDealer(closestPlayer.seat);
+
+    for (const player of winners) {
+      const distance = this.getDistanceFromDealer(player.seat);
+      if (distance < shortestDistance) {
+        shortestDistance = distance;
+        closestPlayer = player;
+      }
+    }
+
+    return closestPlayer;
+  }
+
+  /** Get distance from dealer button (seats to the left) */
+  getDistanceFromDealer(seatIndex) {
+    let distance = 0;
+    let current = this.dealerSeat;
+    
+    while (current !== seatIndex && distance < config.MAX_PLAYERS) {
+      current = (current + 1) % config.MAX_PLAYERS;
+      distance++;
+    }
+    
+    return distance;
+  }
+
   /** Single winner (everyone else folded) */
   awardPotToSingleWinner(player) {
     this.phase = 'showdown';
     this.clearTurnTimer();
 
-    player.award(this.pot);
+    const totalPot = this.pot;
+    player.award(totalPot);
     player.handsWon++;
-    this.mitsuki(`🏆 ${player.name} takes the pot (${this.pot}). No contest.`);
+    this.mitsuki(`🏆 ${player.name} takes the pot (${totalPot}). No contest.`);
 
     this.broadcast({
       type: 'hand_complete',
       winner: player.name,
-      pot: this.pot,
+      pot: totalPot,
       showCards: false,
     });
 
     this.recordHandHistory([{ player, hand: null }]);
     this.pot = 0;
+    this.pots = [];
     this.scheduleNextHand();
   }
 
-  /** Calculate side pots */
-  calculateSidePots(contenders) {
-    if (contenders.length === 0) return [{ amount: this.pot, eligible: [] }];
+  /** Calculate side pots based on player contributions */
+  calculatePots() {
+    // Get all players who have contributed to the pot (including folded players)
+    const allContributors = this.seatedPlayers().filter(p => p.totalBetThisHand > 0);
+    const activePlayers = this.activePlayers();
 
-    // Sort by total bet this hand (ascending)
-    const sorted = [...contenders].sort((a, b) => a.totalBetThisHand - b.totalBetThisHand);
+    if (allContributors.length === 0) {
+      this.pots = [];
+      return;
+    }
 
-    // Include folded players' contributions
-    const allPlayers = this.seatedPlayers().filter(p => p.totalBetThisHand > 0);
+    // Get unique bet levels from all-in players, sorted ascending
+    const allInBetLevels = activePlayers
+      .filter(p => p.status === 'all-in')
+      .map(p => p.totalBetThisHand)
+      .sort((a, b) => a - b);
 
+    // Remove duplicates
+    const uniqueLevels = [...new Set(allInBetLevels)];
+    
     const pots = [];
     let prevLevel = 0;
 
-    for (let i = 0; i < sorted.length; i++) {
-      const level = sorted[i].totalBetThisHand;
-      if (level <= prevLevel) continue;
-
+    // Create pots for each all-in level
+    for (const level of uniqueLevels) {
       const increment = level - prevLevel;
-      let potAmount = 0;
+      if (increment <= 0) continue;
 
-      for (const p of allPlayers) {
-        const contrib = Math.min(p.totalBetThisHand - prevLevel, increment);
-        if (contrib > 0) potAmount += contrib;
+      let potAmount = 0;
+      
+      // Calculate pot amount from all contributors
+      for (const player of allContributors) {
+        const contribution = Math.min(player.totalBetThisHand - prevLevel, increment);
+        if (contribution > 0) {
+          potAmount += contribution;
+        }
       }
 
-      // Eligible: all contenders who bet at least this level
-      const eligible = sorted.filter(p => p.totalBetThisHand >= level).map(p => p.id);
+      // Find eligible players (active players who bet at least this level)
+      const eligible = activePlayers
+        .filter(p => p.totalBetThisHand >= level)
+        .map(p => p.seat);
 
-      if (potAmount > 0) {
-        pots.push({ amount: potAmount, eligible });
+      if (potAmount > 0 && eligible.length > 0) {
+        pots.push({
+          amount: potAmount,
+          eligible: eligible,
+          name: pots.length === 0 ? 'Main Pot' : `Side Pot ${pots.length}`
+        });
       }
 
       prevLevel = level;
     }
 
-    // Verify total
-    const totalPots = pots.reduce((sum, p) => sum + p.amount, 0);
-    if (totalPots < this.pot) {
-      // Remainder goes to last pot
-      if (pots.length > 0) {
-        pots[pots.length - 1].amount += (this.pot - totalPots);
-      } else {
-        pots.push({ amount: this.pot, eligible: contenders.map(p => p.id) });
+    // Handle remaining chips from non-all-in players
+    const maxAllInLevel = uniqueLevels.length > 0 ? Math.max(...uniqueLevels) : 0;
+    const activeNonAllIn = activePlayers.filter(p => p.status === 'active');
+    
+    if (activeNonAllIn.length > 0) {
+      let remainingAmount = 0;
+      
+      // Calculate remaining contributions beyond the highest all-in level
+      for (const player of allContributors) {
+        const contribution = Math.max(0, player.totalBetThisHand - maxAllInLevel);
+        remainingAmount += contribution;
+      }
+
+      if (remainingAmount > 0) {
+        const eligible = activePlayers.map(p => p.seat);
+        const potName = pots.length === 0 ? 'Main Pot' : `Side Pot ${pots.length}`;
+        
+        pots.push({
+          amount: remainingAmount,
+          eligible: eligible,
+          name: potName
+        });
       }
     }
 
-    return pots;
+    // If no side pots were created, create a main pot with all the money
+    if (pots.length === 0 && this.pot > 0) {
+      pots.push({
+        amount: this.pot,
+        eligible: activePlayers.map(p => p.seat),
+        name: 'Main Pot'
+      });
+    }
+
+    this.pots = pots;
+  }
+
+  /** Get the current total pot amount */
+  getTotalPot() {
+    return this.pots.reduce((sum, pot) => sum + pot.amount, 0);
   }
 
   /** Schedule next hand */
   scheduleNextHand() {
     this.pot = 0;
+    this.pots = [];
     setTimeout(() => {
       const eligible = this.seatedPlayers().filter(p => p.stack > 0);
       if (eligible.length >= config.MIN_PLAYERS) {
@@ -791,6 +938,7 @@ class Table {
       handNumber: this.handNumber,
       phase: this.phase,
       pot: this.pot,
+      pots: this.pots,
       communityCards: this.communityCards,
       currentBet: this.currentBetLevel,
       minRaise: this.minRaise,
@@ -811,6 +959,7 @@ class Table {
       playerCount: this.seatedPlayers().length,
       maxPlayers: config.MAX_PLAYERS,
       pot: this.pot,
+      pots: this.pots,
       blinds: `${config.SMALL_BLIND}/${config.BIG_BLIND}`,
       communityCards: this.communityCards,
     };

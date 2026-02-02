@@ -308,6 +308,7 @@
             z-index: 6;
             color: #fbbf24;
             box-shadow: 0 0 15px rgba(251, 191, 36, 0.2);
+            min-width: 140px;
         }
 
         .pot-main {
@@ -316,10 +317,15 @@
         }
 
         .pot-side {
-            font-size: 0.6em;
+            font-size: 0.7em;
             color: #a78bfa;
             opacity: 0.9;
-            margin-top: 2px;
+            margin-top: 3px;
+            line-height: 1.2;
+        }
+
+        .pot-side-item {
+            margin: 2px 0;
         }
 
         .pot-chips {
@@ -2610,7 +2616,7 @@
                 updatePhaseIndicator(state);
 
                 // Update pot
-                updatePotDisplay(state.pot || 0, state.sidePots || []);
+                updatePotDisplay(state.pot || 0, state.pots || []);
 
                 // Update community cards
                 updateCommunityCards(state.communityCards || []);
@@ -2656,19 +2662,40 @@
         }
 
         // Update pot display with side pots
-        function updatePotDisplay(mainPot, sidePots) {
-            document.querySelector('.pot-main').textContent = `Pot: $${mainPot}`;
-            
+        function updatePotDisplay(mainPot, pots) {
             const sidePotElement = document.getElementById('sidePots');
-            if (sidePots && sidePots.length > 0) {
-                sidePotElement.style.display = 'block';
-                sidePotElement.textContent = sidePots.map((pot, i) => `Side Pot ${i + 1}: $${pot}`).join(' | ');
+            
+            if (pots && pots.length > 0) {
+                // Use new pots structure
+                const mainPotInfo = pots.find(pot => pot.name === 'Main Pot') || pots[0];
+                const sidePots = pots.filter(pot => pot.name !== 'Main Pot');
+                
+                // Update main pot display
+                if (mainPotInfo) {
+                    document.querySelector('.pot-main').textContent = `${mainPotInfo.name}: $${mainPotInfo.amount}`;
+                } else {
+                    document.querySelector('.pot-main').textContent = `Pot: $${mainPot}`;
+                }
+                
+                // Update side pots display
+                if (sidePots.length > 0) {
+                    sidePotElement.style.display = 'block';
+                    sidePotElement.innerHTML = sidePots.map(pot => 
+                        `<div class="pot-side-item">${pot.name}: $${pot.amount}</div>`
+                    ).join('');
+                } else {
+                    sidePotElement.style.display = 'none';
+                }
+                
+                // Update chips visualization using total
+                const totalPot = pots.reduce((sum, pot) => sum + pot.amount, 0);
+                updatePotChips(totalPot);
             } else {
+                // Fallback to old structure
+                document.querySelector('.pot-main').textContent = `Pot: $${mainPot}`;
                 sidePotElement.style.display = 'none';
+                updatePotChips(mainPot);
             }
-
-            // Update pot chips visualization
-            updatePotChips(mainPot);
         }
 
         // Update pot chips visualization
