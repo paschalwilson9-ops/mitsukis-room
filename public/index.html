@@ -2065,6 +2065,9 @@
                         player: name
                     });
                     
+                    // Immediately show player in their seat (don't wait for fetchGameState)
+                    updateSinglePlayerSeat({ name: name, seat: data.seat, stack: buyIn, status: 'active' });
+                    
                     // Reconnect WebSocket with the new token
                     if (gameState.socket) {
                         gameState.socket.close();
@@ -2132,34 +2135,42 @@
 
         // Update the game display
         function updateGameDisplay(state) {
-            // Update empty state visibility
-            updateEmptyState(state);
-
-            // Update pot
-            updatePotDisplay(state.pot || 0, state.sidePots || []);
-
-            // Update community cards
-            updateCommunityCards(state.communityCards || []);
-
-            // Update players - ensure we have valid player data
-            const players = state.players || [];
-            const validPlayers = players.filter(p => p !== null);
-            console.log('updateGameDisplay: validPlayers=', validPlayers.length, validPlayers.map(p => p.name + '@seat' + p.seat));
-            updatePlayers(validPlayers);
-
-            // Update player's cards (use state.you.holeCards if available)
-            if (state.you && state.you.holeCards && !gameState.isSpectating) {
-                updatePlayerCards(state.you.holeCards);
-            } else if (state.playerCards && !gameState.isSpectating) {
-                updatePlayerCards(state.playerCards);
+            try {
+                // Update players FIRST — most important visual
+                const players = state.players || [];
+                const validPlayers = players.filter(p => p !== null);
+                console.log('Rendering', validPlayers.length, 'players:', validPlayers.map(p => p.name + '@seat' + p.seat));
+                updatePlayers(validPlayers);
+            } catch (e) {
+                console.error('updatePlayers failed:', e);
             }
 
-            // Update action buttons
-            updateActionButtons(state);
+            try {
+                // Update empty state visibility
+                updateEmptyState(state);
 
-            // Add game log entry if there's a recent action
-            if (state.lastAction) {
-                addGameLogEntry(state.lastAction);
+                // Update pot
+                updatePotDisplay(state.pot || 0, state.sidePots || []);
+
+                // Update community cards
+                updateCommunityCards(state.communityCards || []);
+
+                // Update player's cards (use state.you.holeCards if available)
+                if (state.you && state.you.holeCards && !gameState.isSpectating) {
+                    updatePlayerCards(state.you.holeCards);
+                } else if (state.playerCards && !gameState.isSpectating) {
+                    updatePlayerCards(state.playerCards);
+                }
+
+                // Update action buttons
+                updateActionButtons(state);
+
+                // Add game log entry if there's a recent action
+                if (state.lastAction) {
+                    addGameLogEntry(state.lastAction);
+                }
+            } catch (e) {
+                console.error('updateGameDisplay secondary error:', e);
             }
         }
 
