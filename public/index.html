@@ -2821,15 +2821,17 @@
                             showStatus('Session restored!', 'success');
                             updateGameDisplay(data);
                         } else {
-                            // Token expired, clear it
+                            // Token expired, clear it silently (no error toast)
                             localStorage.removeItem('mitsuki_token');
                             localStorage.removeItem('mitsuki_name');
+                            localStorage.removeItem('mitsuki_tournament_token');
                         }
                         initializeWebSocket();
                     })
                     .catch(() => {
                         localStorage.removeItem('mitsuki_token');
                         localStorage.removeItem('mitsuki_name');
+                        localStorage.removeItem('mitsuki_tournament_token');
                         initializeWebSocket();
                     });
             } else {
