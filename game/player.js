@@ -18,6 +18,15 @@ class Player {
     this.totalBetThisHand = 0;  // Total bet across all rounds this hand
     this.lastAction = null;
 
+    // Time Bank Feature
+    this.timeBank = config.TIME_BANK_SECONDS; // 30 seconds extra total per game
+    this.usingTimeBank = false;
+
+    // Sit-Out Feature  
+    this.sitOut = false;        // Player can sit out (miss blinds, skip hands)
+    this.sitOutTimer = null;    // Auto-remove after 10 minutes
+    this.disconnected = false;  // Track if player disconnected
+
     // Stats
     this.elo = config.DEFAULT_ELO;
     this.handsPlayed = 0;
@@ -27,10 +36,16 @@ class Player {
   /** Reset for a new hand */
   resetForHand() {
     this.holeCards = [];
-    this.status = this.stack > 0 ? 'active' : 'sitting-out';
+    // Don't include sitting-out players in hands
+    if (this.sitOut) {
+      this.status = 'sitting-out';
+    } else {
+      this.status = this.stack > 0 ? 'active' : 'sitting-out';
+    }
     this.currentBet = 0;
     this.totalBetThisHand = 0;
     this.lastAction = null;
+    this.usingTimeBank = false;
   }
 
   /** Reset bet for a new betting round */
@@ -55,6 +70,43 @@ class Player {
     this.stack += amount;
   }
 
+  /** Set player to sit-out mode */
+  setSitOut() {
+    this.sitOut = true;
+    this.status = 'sitting-out';
+    
+    // Start 10-minute timer for auto-removal
+    if (this.sitOutTimer) {
+      clearTimeout(this.sitOutTimer);
+    }
+    this.sitOutTimer = setTimeout(() => {
+      // Mark for removal - table will handle actual removal
+      this.shouldAutoRemove = true;
+    }, config.SIT_OUT_AUTO_REMOVE_MS);
+  }
+
+  /** Return player from sit-out mode */
+  returnFromSitOut() {
+    this.sitOut = false;
+    this.disconnected = false;
+    
+    if (this.sitOutTimer) {
+      clearTimeout(this.sitOutTimer);
+      this.sitOutTimer = null;
+    }
+    
+    // Set status appropriately
+    if (this.stack > 0) {
+      this.status = 'active';
+    }
+  }
+
+  /** Mark player as disconnected (auto sit-out) */
+  setDisconnected() {
+    this.disconnected = true;
+    this.setSitOut();
+  }
+
   /** Public view — what other players see */
   toPublicJSON() {
     return {
@@ -64,6 +116,9 @@ class Player {
       status: this.status,
       currentBet: this.currentBet,
       lastAction: this.lastAction,
+      sitOut: this.sitOut,
+      timeBank: this.timeBank,
+      usingTimeBank: this.usingTimeBank,
     };
   }
 

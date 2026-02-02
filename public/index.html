@@ -27,6 +27,36 @@
     </audio>
 
     <style>
+        :root {
+            /* Default (Free Table) Theme Colors */
+            --felt-color: #0d1f0d;
+            --felt-gradient: radial-gradient(ellipse, #1a4a3a 0%, #0d2d1d 70%);
+            --table-border: #2a3f5f;
+            --table-border-glow: rgba(42, 63, 95, 0.4);
+            --accent-color: #3182ce;
+            --accent-glow: rgba(49, 130, 206, 0.3);
+            --pot-border: #fbbf24;
+            --header-accent: #8892b0;
+            --active-player-border: #60a5fa;
+            --active-player-glow: rgba(96, 165, 250, 0.6);
+            --header-title: #f8fafc;
+        }
+
+        .theme-paid {
+            /* Paid Table Theme Colors - Red & Gold */
+            --felt-color: #2d0a0a;
+            --felt-gradient: radial-gradient(ellipse, #4a1515 0%, #2d0a0a 70%);
+            --table-border: #d4a937;
+            --table-border-glow: rgba(212, 169, 55, 0.4);
+            --accent-color: #d4a937;
+            --accent-glow: rgba(212, 169, 55, 0.3);
+            --pot-border: #d4a937;
+            --header-accent: #d4a937;
+            --active-player-border: #d4a937;
+            --active-player-glow: rgba(212, 169, 55, 0.6);
+            --header-title: #fef3c7;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -87,7 +117,7 @@
         .header {
             background: linear-gradient(135deg, #0d1421 0%, #1a1a2e 50%, #16213e 100%);
             padding: 20px 30px;
-            border-bottom: 2px solid #8892b0;
+            border-bottom: 2px solid var(--header-accent);
             box-shadow: 0 4px 20px rgba(136, 146, 176, 0.2);
             position: relative;
             z-index: 10;
@@ -100,7 +130,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: radial-gradient(ellipse at center, rgba(136, 146, 176, 0.1) 0%, transparent 70%);
+            background: radial-gradient(ellipse at center, var(--accent-glow) 0%, transparent 70%);
             pointer-events: none;
         }
 
@@ -108,10 +138,10 @@
             font-family: 'Playfair Display', serif;
             font-size: 2.4em;
             font-weight: 700;
-            text-shadow: 0 0 20px rgba(136, 146, 176, 0.8);
+            text-shadow: 0 0 20px var(--accent-glow);
             margin: 0;
             display: inline-block;
-            color: #f8fafc;
+            color: var(--header-title);
         }
 
         .header .motto {
@@ -119,8 +149,8 @@
             font-family: 'Playfair Display', serif;
             font-style: italic;
             font-size: 1.1em;
-            color: #8892b0;
-            text-shadow: 0 0 10px rgba(136, 146, 176, 0.4);
+            color: var(--header-accent);
+            text-shadow: 0 0 10px var(--accent-glow);
             margin-top: 8px;
         }
 
@@ -183,13 +213,13 @@
             transform: translate(-50%, -50%);
             width: 600px;
             height: 400px;
-            background: radial-gradient(ellipse, #1a4a3a 0%, #0d2d1d 70%);
+            background: var(--felt-gradient);
             border-radius: 50%;
-            border: 8px solid #2a3f5f;
+            border: 8px solid var(--table-border);
             box-shadow: 
                 inset 0 0 50px rgba(0,0,0,0.7),
-                0 0 40px rgba(136, 146, 176, 0.15),
-                inset 0 0 100px rgba(136, 146, 176, 0.05);
+                0 0 40px var(--table-border-glow),
+                inset 0 0 100px var(--accent-glow);
             position: relative;
         }
 
@@ -303,11 +333,11 @@
             background: rgba(0,0,0,0.8);
             padding: 6px 18px;
             border-radius: 15px;
-            border: 2px solid #fbbf24;
+            border: 2px solid var(--pot-border);
             backdrop-filter: blur(10px);
             z-index: 6;
-            color: #fbbf24;
-            box-shadow: 0 0 15px rgba(251, 191, 36, 0.2);
+            color: var(--pot-border);
+            box-shadow: 0 0 15px var(--accent-glow);
             min-width: 140px;
         }
 
@@ -462,9 +492,9 @@
         }
 
         .player-seat.active {
-            border-color: #60a5fa;
-            box-shadow: 0 0 40px rgba(96, 165, 250, 0.6), 0 0 20px rgba(96, 165, 250, 0.3);
-            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--active-player-border);
+            box-shadow: 0 0 40px var(--active-player-glow), 0 0 20px var(--accent-glow);
+            background: var(--accent-glow);
             transform: scale(1.05);
         }
 
@@ -590,6 +620,56 @@
             background: linear-gradient(90deg, #10b981, #f59e0b, #ef4444);
             transition: width 1s linear;
             border-radius: 2px;
+        }
+
+        /* Time Bank Timer */
+        .time-bank-timer {
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 3px;
+            background: rgba(251, 191, 36, 0.3);
+            border-radius: 2px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .time-bank-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #fbbf24, #f59e0b);
+            transition: width 1s linear;
+            border-radius: 2px;
+        }
+
+        /* Time Bank Indicator */
+        .time-bank-indicator {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(251, 191, 36, 0.9);
+            color: #1f2937;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 700;
+            display: none;
+            white-space: nowrap;
+        }
+
+        /* Sitting Out State */
+        .player-seat.sitting-out {
+            opacity: 0.4;
+            filter: grayscale(0.8);
+        }
+
+        .player-seat.sitting-out .player-name::after {
+            content: ' (SITTING OUT)';
+            color: #ef4444;
+            font-size: 0.7em;
+            display: block;
         }
 
         /* Chip Stack Visualization */
@@ -2000,6 +2080,37 @@
                 <button onclick="joinGame()">Join Game</button>
             </div>
 
+            <!-- Player Actions (when in game) -->
+            <div id="playerActionsSection" style="display: none;">
+                <div style="background: rgba(136, 146, 176, 0.05); padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #8892b0;">
+                    <h3 style="color: #f8fafc; margin-bottom: 15px; text-align: center; font-size: 1.1em;">Player Actions</h3>
+                    
+                    <div id="rebuySection" style="display: none;">
+                        <button id="rebuyBtn" onclick="showRebuyModal()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #22c55e, #16a34a); border: none; border-radius: 8px; color: white; font-weight: 600; margin-bottom: 10px; cursor: pointer;">
+                            Rebuy ($100)
+                        </button>
+                    </div>
+                    
+                    <div id="topUpSection" style="display: none;">
+                        <button id="topUpBtn" onclick="showTopUpModal()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border: none; border-radius: 8px; color: white; font-weight: 600; margin-bottom: 10px; cursor: pointer;">
+                            Top Up
+                        </button>
+                    </div>
+                    
+                    <div id="sitOutSection" style="display: none;">
+                        <button id="sitOutBtn" onclick="sitOut()" style="width: 100%; padding: 12px; background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; border-radius: 8px; color: #fbbf24; font-weight: 600; margin-bottom: 10px; cursor: pointer;">
+                            Sit Out
+                        </button>
+                    </div>
+                    
+                    <div id="returnSection" style="display: none;">
+                        <button id="returnBtn" onclick="returnFromSitOut()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 8px; color: white; font-weight: 600; margin-bottom: 10px; cursor: pointer;">
+                            I'm Back
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Leave Button (hidden initially, controlled by compact header) -->
             <div id="leaveSection" style="display: none;"></div>
 
@@ -2072,6 +2183,28 @@
             <input type="number" id="customTipAmount" placeholder="Amount in USD" min="0.01" step="0.01">
             <button onclick="confirmCustomTip()">Send Tip</button>
             <button class="close-btn" onclick="closeModal('customTipModal')">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Rebuy Modal -->
+    <div class="modal" id="rebuyModal">
+        <div class="modal-content">
+            <h3>💰 Rebuy Chips</h3>
+            <p>Your stack is empty. Add more chips to continue playing.</p>
+            <input type="number" id="rebuyAmount" placeholder="Amount ($)" min="20" max="1000" value="100">
+            <button onclick="confirmRebuy()">Rebuy</button>
+            <button class="close-btn" onclick="closeModal('rebuyModal')">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Top-Up Modal -->
+    <div class="modal" id="topUpModal">
+        <div class="modal-content">
+            <h3>💸 Top Up Chips</h3>
+            <p>Add chips to your current stack (up to max buy-in).</p>
+            <input type="number" id="topUpAmount" placeholder="Amount to add ($)" min="1">
+            <button onclick="confirmTopUp()">Top Up</button>
+            <button class="close-btn" onclick="closeModal('topUpModal')">Cancel</button>
         </div>
     </div>
 
@@ -2156,6 +2289,7 @@
                             document.getElementById('joinForm').style.display = 'none';
                             document.getElementById('leaveSection').style.display = 'block';
                             document.getElementById('compactLeaveBtn').style.display = 'inline-block';
+                            document.getElementById('playerActionsSection').style.display = 'block';
                             document.getElementById('playerName').value = localStorage.getItem('mitsuki_name') || '';
                             showStatus('Session restored!', 'success');
                             updateGameDisplay(data);
@@ -2360,6 +2494,10 @@
                     <div class="turn-timer" style="display: none;">
                         <div class="timer-bar"></div>
                     </div>
+                    <div class="time-bank-timer" style="display: none;">
+                        <div class="time-bank-bar"></div>
+                    </div>
+                    <div class="time-bank-indicator" style="display: none;">⏰ Time Bank: 30s</div>
                 `;
                 // Clickable empty seats → focus join form
                 seat.addEventListener('click', () => {
@@ -2403,6 +2541,7 @@
                     document.getElementById('joinForm').style.display = 'none';
                     document.getElementById('leaveSection').style.display = 'block';
                     document.getElementById('compactLeaveBtn').style.display = 'inline-block';
+                    document.getElementById('playerActionsSection').style.display = 'block';
                     
                     setDealerAnimation('thankyou');
                     showStatus(`Welcome to the table, ${name}! Seat ${data.seat + 1}`, 'success');
@@ -2457,6 +2596,7 @@
             document.getElementById('joinForm').style.display = 'block';
             document.getElementById('leaveSection').style.display = 'none';
             document.getElementById('compactLeaveBtn').style.display = 'none';
+            document.getElementById('playerActionsSection').style.display = 'none';
             document.getElementById('actionButtons').classList.remove('visible');
             document.getElementById('playerCards').innerHTML = '';
             
@@ -2544,6 +2684,11 @@
 
         // Update the game display
         function updateGameDisplay(state) {
+            // Update theme based on table type
+            if (state.tableType) {
+                updateTheme(state.tableType);
+            }
+
             // Reset card caches when hand changes
             if (state.handNumber !== _lastHandNumber) {
                 _lastCommunityKey = null;
@@ -2630,6 +2775,12 @@
 
                 // Update action buttons
                 updateActionButtons(state);
+
+                // Update player action buttons (rebuy, sit-out, etc.)
+                updatePlayerActionButtons(state);
+
+                // Update hand history display
+                updateHandHistoryDisplay(state.handHistory);
 
                 // Add game log entry if there's a recent action
                 if (state.lastAction) {
@@ -2813,7 +2964,12 @@
             console.log('updateSinglePlayerSeat:', player.name, 'seat:', player.seat);
             const seat = document.getElementById(`seat-${player.seat}`);
             if (seat) {
-                seat.classList.remove('empty');
+                seat.classList.remove('empty', 'sitting-out');
+                
+                // Handle sitting out state
+                if (player.sitOut || player.status === 'sitting-out') {
+                    seat.classList.add('sitting-out');
+                }
                 
                 // Set up avatar with initials
                 const avatar = seat.querySelector('.player-avatar');
@@ -2851,13 +3007,23 @@
                     statusElement.style.display = 'none';
                 }
 
-                // Handle current player highlighting
+                // Handle current player highlighting and timers
                 if (player.isCurrentPlayer) {
                     seat.classList.add('active');
+                    
                     // Show turn timer
                     const timer = seat.querySelector('.turn-timer');
                     timer.style.display = 'block';
                     startTurnTimer(timer);
+                    
+                    // Handle time bank
+                    if (player.usingTimeBank && player.timeBank > 0) {
+                        showTimeBankForPlayer(seat, player);
+                    } else {
+                        hideTimeBankForPlayer(seat);
+                    }
+                } else {
+                    hideTimeBankForPlayer(seat);
                 }
 
                 // Add dealer button
@@ -2912,9 +3078,45 @@
             bar.style.transition = 'none';
             
             setTimeout(() => {
-                bar.style.transition = 'width 30s linear';
+                bar.style.transition = 'width 15s linear'; // 15 second turn timer
                 bar.style.width = '0%';
             }, 100);
+        }
+
+        // Show time bank for player
+        function showTimeBankForPlayer(seat, player) {
+            let timeBankTimer = seat.querySelector('.time-bank-timer');
+            let timeBankIndicator = seat.querySelector('.time-bank-indicator');
+            
+            if (!timeBankTimer) {
+                timeBankTimer = document.createElement('div');
+                timeBankTimer.className = 'time-bank-timer';
+                timeBankTimer.innerHTML = '<div class="time-bank-bar"></div>';
+                seat.appendChild(timeBankTimer);
+            }
+            
+            if (!timeBankIndicator) {
+                timeBankIndicator = document.createElement('div');
+                timeBankIndicator.className = 'time-bank-indicator';
+                seat.appendChild(timeBankIndicator);
+            }
+            
+            timeBankTimer.style.display = 'block';
+            timeBankIndicator.style.display = 'block';
+            timeBankIndicator.textContent = `⏰ Time Bank: ${player.timeBank}s`;
+            
+            const timeBankBar = timeBankTimer.querySelector('.time-bank-bar');
+            const percentage = (player.timeBank / 30) * 100; // Assuming 30s max time bank
+            timeBankBar.style.width = percentage + '%';
+        }
+
+        // Hide time bank for player  
+        function hideTimeBankForPlayer(seat) {
+            const timeBankTimer = seat.querySelector('.time-bank-timer');
+            const timeBankIndicator = seat.querySelector('.time-bank-indicator');
+            
+            if (timeBankTimer) timeBankTimer.style.display = 'none';
+            if (timeBankIndicator) timeBankIndicator.style.display = 'none';
         }
 
         // Update player chip stack visualization
@@ -2958,6 +3160,91 @@
                     container.appendChild(cardElement);
                 }, index * 300);
             });
+        }
+
+        // Update player action buttons (rebuy, sit-out, etc.)
+        function updatePlayerActionButtons(state) {
+            const playerActionsSection = document.getElementById('playerActionsSection');
+            const rebuySection = document.getElementById('rebuySection');
+            const topUpSection = document.getElementById('topUpSection');
+            const sitOutSection = document.getElementById('sitOutSection');
+            const returnSection = document.getElementById('returnSection');
+            
+            if (!gameState.isSpectating && state.you) {
+                playerActionsSection.style.display = 'block';
+                
+                // Show rebuy if player is busted
+                if (state.canRebuy || state.you.stack === 0) {
+                    rebuySection.style.display = 'block';
+                } else {
+                    rebuySection.style.display = 'none';
+                }
+                
+                // Show top-up if player can add chips (not during a hand)
+                if (state.canTopUp && state.phase === 'waiting') {
+                    topUpSection.style.display = 'block';
+                } else {
+                    topUpSection.style.display = 'none';
+                }
+                
+                // Show sit-out/return buttons
+                if (state.you.sitOut) {
+                    sitOutSection.style.display = 'none';
+                    returnSection.style.display = 'block';
+                } else {
+                    sitOutSection.style.display = 'block';
+                    returnSection.style.display = 'none';
+                }
+            } else {
+                playerActionsSection.style.display = 'none';
+            }
+        }
+
+        // Update hand history display
+        function updateHandHistoryDisplay(handHistory) {
+            const container = document.getElementById('handHistoryContent');
+            
+            if (!handHistory || handHistory.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #8892b0;">No hands played yet</div>';
+                return;
+            }
+
+            container.innerHTML = handHistory.slice().reverse().map(hand => {
+                const communityCardsHtml = hand.communityCards ? hand.communityCards.map(c => miniCard(c)).join('') : '';
+                const winnerInfo = hand.winner ? `Winner: ${hand.winner}` : 'No winner';
+                
+                return `
+                    <div class="history-entry" style="cursor: pointer;" onclick="toggleHandDetails(${hand.handNumber})">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong>Hand #${hand.handNumber}</strong>
+                            <span style="color: #fbbf24;">$${hand.totalPot}</span>
+                        </div>
+                        <div style="font-size: 0.8em; color: #8892b0; margin-top: 4px;">
+                            ${winnerInfo}
+                        </div>
+                        <div id="hand-details-${hand.handNumber}" style="display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(136, 146, 176, 0.2);">
+                            <div style="margin-bottom: 6px;">
+                                <strong>Board:</strong> ${communityCardsHtml}
+                            </div>
+                            ${hand.players.map(p => `
+                                <div style="font-size: 0.8em; margin: 2px 0;">
+                                    ${p.name}: ${p.holeCards ? p.holeCards.map(c => miniCard(c)).join('') : ''} 
+                                    ${p.finalHand ? `(${p.finalHand})` : ''}
+                                    ${p.won ? `<span style="color: #22c55e;">+$${p.amount}</span>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Toggle hand details
+        function toggleHandDetails(handNumber) {
+            const details = document.getElementById(`hand-details-${handNumber}`);
+            if (details) {
+                details.style.display = details.style.display === 'none' ? 'block' : 'none';
+            }
         }
 
         // Update action buttons based on game state
@@ -3345,6 +3632,12 @@
                 if (data.state.isPlayerTurn && !gameState.isSpectating) {
                     playSound('yourTurnSound');
                 }
+            } else if (data.type === 'time_bank_activated') {
+                showStatus(`⏰ ${data.player} is using their time bank (${data.timeBank}s)`, 'info');
+                playSound('yourTurnSound'); // Alert sound for time bank
+            } else if (data.type === 'time_bank_update') {
+                // Update time bank display in real time
+                updateTimeBankDisplay(data.player, data.timeBank);
             } else if (data.type === 'notification') {
                 showStatus(data.message, 'info');
             } else if (data.type === 'gameAction') {
@@ -3356,6 +3649,35 @@
                 }
             } else if (data.type === 'chat') {
                 addChatMessage(data.sender, data.text);
+            } else if (data.type === 'mitsuki') {
+                // Mitsuki speech bubble updates
+                const bubble = document.getElementById('mitsukiSpeech');
+                if (bubble) {
+                    bubble.textContent = data.message;
+                }
+            }
+        }
+
+        // Update time bank display for a specific player
+        function updateTimeBankDisplay(playerName, timeBank) {
+            // Find the player's seat and update their time bank display
+            const seats = document.querySelectorAll('.player-seat');
+            for (const seat of seats) {
+                const nameElement = seat.querySelector('.player-name');
+                if (nameElement && nameElement.textContent === playerName) {
+                    const indicator = seat.querySelector('.time-bank-indicator');
+                    if (indicator) {
+                        indicator.textContent = `⏰ Time Bank: ${timeBank}s`;
+                        
+                        const timeBankTimer = seat.querySelector('.time-bank-timer');
+                        if (timeBankTimer) {
+                            const bar = timeBankTimer.querySelector('.time-bank-bar');
+                            const percentage = (timeBank / 30) * 100;
+                            bar.style.width = percentage + '%';
+                        }
+                    }
+                    break;
+                }
             }
         }
 
@@ -3513,6 +3835,125 @@
                 showStatus('Failed to copy address', 'error');
             }
             document.body.removeChild(textArea);
+        }
+
+        // ===== REBUY / SIT-OUT FUNCTIONS =====
+
+        // Show rebuy modal
+        function showRebuyModal() {
+            document.getElementById('rebuyModal').style.display = 'flex';
+        }
+
+        // Show top-up modal
+        function showTopUpModal() {
+            document.getElementById('topUpModal').style.display = 'flex';
+        }
+
+        // Confirm rebuy
+        async function confirmRebuy() {
+            try {
+                const amount = parseInt(document.getElementById('rebuyAmount').value);
+                if (!amount || amount < 20) {
+                    showStatus('Minimum rebuy is $20', 'error');
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE}/api/rebuy`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: gameState.token, amount })
+                });
+
+                const data = await response.json();
+                
+                if (data.newStack) {
+                    showStatus(data.message, 'success');
+                    closeModal('rebuyModal');
+                    fetchGameState(); // Refresh game state
+                    setDealerAnimation('thankyou');
+                } else {
+                    showStatus(data.error || 'Rebuy failed', 'error');
+                }
+            } catch (error) {
+                showStatus('Rebuy failed', 'error');
+                console.error('Rebuy error:', error);
+            }
+        }
+
+        // Confirm top-up
+        async function confirmTopUp() {
+            try {
+                const amount = parseInt(document.getElementById('topUpAmount').value);
+                if (!amount || amount <= 0) {
+                    showStatus('Enter a valid amount', 'error');
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE}/api/rebuy`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: gameState.token, amount })
+                });
+
+                const data = await response.json();
+                
+                if (data.newStack) {
+                    showStatus(data.message, 'success');
+                    closeModal('topUpModal');
+                    fetchGameState();
+                } else {
+                    showStatus(data.error || 'Top-up failed', 'error');
+                }
+            } catch (error) {
+                showStatus('Top-up failed', 'error');
+                console.error('Top-up error:', error);
+            }
+        }
+
+        // Sit out from table
+        async function sitOut() {
+            try {
+                const response = await fetch(`${API_BASE}/api/sit-out`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: gameState.token })
+                });
+
+                const data = await response.json();
+                
+                if (data.message) {
+                    showStatus(data.message, 'success');
+                    fetchGameState();
+                } else {
+                    showStatus(data.error || 'Could not sit out', 'error');
+                }
+            } catch (error) {
+                showStatus('Failed to sit out', 'error');
+                console.error('Sit out error:', error);
+            }
+        }
+
+        // Return from sit-out
+        async function returnFromSitOut() {
+            try {
+                const response = await fetch(`${API_BASE}/api/return`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: gameState.token })
+                });
+
+                const data = await response.json();
+                
+                if (data.message) {
+                    showStatus(data.message, 'success');
+                    fetchGameState();
+                } else {
+                    showStatus(data.error || 'Could not return', 'error');
+                }
+            } catch (error) {
+                showStatus('Failed to return', 'error');
+                console.error('Return error:', error);
+            }
         }
 
         // ===== CRYPTO WALLET FUNCTIONS =====
@@ -3794,6 +4235,23 @@
             } catch (error) {
                 console.error('Custom tip error:', error);
                 showStatus('Failed to send custom tip', 'error');
+            }
+        }
+
+        // Theme switching based on table type
+        function updateTheme(tableType) {
+            const body = document.body;
+            const header = document.querySelector('.header h1');
+            const motto = document.querySelector('.header .motto');
+
+            if (tableType === 'paid') {
+                body.classList.add('theme-paid');
+                if (header) header.textContent = "🌙 Mitsuki's Room — High Stakes";
+                if (motto) motto.textContent = "The moon watches. The stakes rise.";
+            } else {
+                body.classList.remove('theme-paid');
+                if (header) header.textContent = "🌙 Mitsuki's Room";
+                if (motto) motto.textContent = "The moon watches. The cards fall.";
             }
         }
     </script>

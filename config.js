@@ -21,9 +21,11 @@ module.exports = {
   DEFAULT_BUY_IN: 200,
 
   // Timing
-  TURN_TIMER_MS: 30000,       // 30 seconds to act
+  TURN_TIMER_MS: 15000,       // 15 seconds to act (normal timer)
+  TIME_BANK_SECONDS: 30,      // 30 seconds time bank per game
   HAND_START_DELAY_MS: 3000,  // 3 seconds between hands
   SHOWDOWN_DELAY_MS: 2000,    // 2 seconds to admire the showdown
+  SIT_OUT_AUTO_REMOVE_MS: 10 * 60 * 1000, // 10 minutes auto-remove
 
   // Hand history
   MAX_HAND_HISTORY: 100,

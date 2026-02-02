@@ -22,8 +22,8 @@ class TableManager {
     this.wsClients = new Map();   // playerId -> Set<WebSocket>
   }
 
-  createTable() {
-    const table = new Table();
+  createTable(options = {}) {
+    const table = new Table(undefined, options);
     this.tables.set(table.id, table);
 
     // Wire up broadcast to WebSocket clients
@@ -50,9 +50,9 @@ class TableManager {
     return [...this.tables.values()];
   }
 
-  findAvailableTable() {
+  findAvailableTable(tableType = 'free') {
     for (const table of this.tables.values()) {
-      if (table.seatedPlayers().length < config.MAX_PLAYERS) {
+      if (table.type === tableType && table.seatedPlayers().length < config.MAX_PLAYERS) {
         return table;
       }
     }
@@ -149,6 +149,24 @@ wss.on('connection', (ws, req) => {
 
   ws.on('close', () => {
     tableManager.removeWsClient(token, ws);
+    
+    // Set player to sit-out instead of removing them
+    const table = tableManager.findTableByPlayer(token);
+    if (table) {
+      const player = table.findPlayer(token);
+      if (player && !player.sitOut) {
+        player.setDisconnected();
+        table.mitsuki(`${player.name} disconnected and is now sitting out.`);
+        
+        // If it was their turn, auto-fold
+        if (table.phase !== 'waiting' && table.phase !== 'showdown') {
+          const currentPlayer = table.getCurrentPlayer();
+          if (currentPlayer && currentPlayer.id === token) {
+            table.handleAction(token, 'fold');
+          }
+        }
+      }
+    }
   });
 
   ws.on('message', (data) => {

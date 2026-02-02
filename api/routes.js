@@ -35,27 +35,32 @@ function createRoutes(tableManager) {
 
   /**
    * POST /api/join
-   * Join a table. Body: { name, buyIn? }
+   * Join a table. Body: { name, buyIn?, tableType? }
    * Returns: { token, seat, tableId }
    */
   router.post('/join', (req, res) => {
-    const { name, buyIn } = req.body;
+    const { name, buyIn, tableType } = req.body;
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return res.status(400).json({ error: 'Name is required' });
     }
 
-    const chips = buyIn || config.DEFAULT_BUY_IN;
-    if (chips < config.MIN_BUY_IN || chips > config.MAX_BUY_IN) {
-      return res.status(400).json({
-        error: `Buy-in must be between ${config.MIN_BUY_IN} and ${config.MAX_BUY_IN}`,
-      });
+    const type = tableType || 'free';
+    if (!['free', 'paid'].includes(type)) {
+      return res.status(400).json({ error: 'Table type must be "free" or "paid"' });
     }
 
     // Find a table with space, or create one
-    let table = tableManager.findAvailableTable();
+    let table = tableManager.findAvailableTable(type);
     if (!table) {
-      table = tableManager.createTable();
+      table = tableManager.createTable({ type });
+    }
+
+    const chips = buyIn || config.DEFAULT_BUY_IN;
+    if (chips < table.minBuyIn || chips > table.maxBuyIn) {
+      return res.status(400).json({
+        error: `Buy-in must be between ${table.minBuyIn} and ${table.maxBuyIn} for ${type} tables`,
+      });
     }
 
     // Reject duplicate names at the same table
@@ -75,11 +80,16 @@ function createRoutes(tableManager) {
     // Track player-to-table mapping
     tableManager.registerPlayer(player.id, table.id);
 
+    const welcomeMessage = table.type === 'paid' 
+      ? `🌙 Welcome to the High Stakes room, ${name}. Seat ${seat} is yours. The stakes are real.`
+      : `🌙 Welcome to Mitsuki's Room, ${name}. Seat ${seat} is yours.`;
+
     res.json({
       token: player.id,
       seat,
       tableId: table.id,
-      message: `🌙 Welcome to Mitsuki's Room, ${name}. Seat ${seat} is yours.`,
+      tableType: table.type,
+      message: welcomeMessage,
     });
   });
 
@@ -167,6 +177,109 @@ function createRoutes(tableManager) {
     res.json({
       message: `${name} has left the room.`,
       finalStack: stack,
+    });
+  });
+
+  /**
+   * POST /api/sit-out
+   * Sit out from the table. Body: { token }
+   */
+  router.post('/sit-out', (req, res) => {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ error: 'Token is required' });
+
+    const table = tableManager.findTableByPlayer(token);
+    if (!table) {
+      return res.status(404).json({ error: 'Player not found at any table' });
+    }
+
+    const success = table.setSitOut(token);
+    if (success) {
+      res.json({ message: 'You are now sitting out' });
+    } else {
+      res.status(400).json({ error: 'Could not sit out' });
+    }
+  });
+
+  /**
+   * POST /api/return
+   * Return from sit-out. Body: { token }
+   */
+  router.post('/return', (req, res) => {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ error: 'Token is required' });
+
+    const table = tableManager.findTableByPlayer(token);
+    if (!table) {
+      return res.status(404).json({ error: 'Player not found at any table' });
+    }
+
+    const success = table.returnFromSitOut(token);
+    if (success) {
+      res.json({ message: 'Welcome back to the table!' });
+    } else {
+      res.status(400).json({ error: 'Could not return from sit-out' });
+    }
+  });
+
+  /**
+   * POST /api/rebuy
+   * Add chips to stack. Body: { token, amount }
+   */
+  router.post('/rebuy', (req, res) => {
+    const { token, amount } = req.body;
+    if (!token) return res.status(400).json({ error: 'Token is required' });
+    if (!amount || amount <= 0) return res.status(400).json({ error: 'Valid amount is required' });
+
+    const table = tableManager.findTableByPlayer(token);
+    if (!table) {
+      return res.status(404).json({ error: 'Player not found at any table' });
+    }
+
+    const player = table.findPlayer(token);
+    if (!player) {
+      return res.status(404).json({ error: 'Player not found' });
+    }
+
+    // Check if rebuy is allowed
+    const maxBuyIn = config.MAX_BUY_IN;
+    if (player.stack + amount > maxBuyIn) {
+      return res.status(400).json({ 
+        error: `Cannot exceed max buy-in of ${maxBuyIn}. Current stack: ${player.stack}` 
+      });
+    }
+
+    // Add chips to player's stack
+    player.stack += amount;
+    
+    // If player was busted, bring them back to active status
+    if (player.stack > 0 && player.status === 'sitting-out' && !player.sitOut) {
+      player.status = 'active';
+    }
+
+    table.mitsuki(`${player.name} added ${amount} chips. Back for more? I respect the persistence.`);
+    
+    res.json({ 
+      message: `Added ${amount} chips to your stack`,
+      newStack: player.stack 
+    });
+  });
+
+  /**
+   * GET /api/history/:tableId
+   * Get hand history for a specific table
+   */
+  router.get('/history/:tableId', (req, res) => {
+    const { tableId } = req.params;
+    const table = tableManager.getTable(tableId);
+    
+    if (!table) {
+      return res.status(404).json({ error: 'Table not found' });
+    }
+
+    res.json({ 
+      tableId,
+      history: table.handHistory 
     });
   });
 

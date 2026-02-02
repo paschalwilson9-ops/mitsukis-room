@@ -11,8 +11,23 @@ const config = require('../config');
 const PHASES = ['waiting', 'preflop', 'flop', 'turn', 'river', 'showdown'];
 
 class Table {
-  constructor(id = uuidv4()) {
+  constructor(id = uuidv4(), options = {}) {
     this.id = id;
+    this.type = options.type || 'free';  // 'free' or 'paid'
+    
+    // Set buy-in limits based on table type
+    if (this.type === 'paid') {
+      this.minBuyIn = options.minBuyIn || config.MIN_BUY_IN * 10; // $500 default for paid
+      this.maxBuyIn = options.maxBuyIn || config.MAX_BUY_IN * 10; // $4000 default for paid
+      this.smallBlind = options.smallBlind || config.SMALL_BLIND * 10; // $10 default
+      this.bigBlind = options.bigBlind || config.BIG_BLIND * 10; // $20 default
+    } else {
+      this.minBuyIn = config.MIN_BUY_IN;   // $50
+      this.maxBuyIn = config.MAX_BUY_IN;   // $200
+      this.smallBlind = config.SMALL_BLIND; // $1
+      this.bigBlind = config.BIG_BLIND;     // $2
+    }
+
     this.seats = new Array(config.MAX_PLAYERS).fill(null);
     this.deck = new Deck();
     this.communityCards = [];
@@ -21,17 +36,21 @@ class Table {
     this.phase = 'waiting';
     this.dealerSeat = -1;        // Button position
     this.currentPlayerIndex = -1;// Index into activePlayers
-    this.minRaise = config.BIG_BLIND;
+    this.minRaise = this.bigBlind;
     this.currentBetLevel = 0;    // Highest bet in current round
     this.handNumber = 0;
-    this.handHistory = [];
+    this.handHistory = [];       // Enhanced hand history tracking
     this.turnTimer = null;
+    this.timeBankTimer = null;   // Time bank timer
     this.currentHandLog = [];
 
     // Broadcast function (set by server)
     this.broadcast = () => {};
 
-    this.mitsuki('🌙 A new table has been prepared. The moon is watching.');
+    const tableMessage = this.type === 'paid' 
+      ? '🌙 A high stakes table has been prepared. The moon watches those who dare...'
+      : '🌙 A new table has been prepared. The moon is watching.';
+    this.mitsuki(tableMessage);
   }
 
   // ─── Mitsuki speaks ───────────────────────────────────────────
@@ -93,7 +112,7 @@ class Table {
 
   /** Get players active in current hand */
   activePlayers() {
-    return this.seats.filter(p => p && (p.status === 'active' || p.status === 'all-in'));
+    return this.seats.filter(p => p && !p.sitOut && (p.status === 'active' || p.status === 'all-in'));
   }
 
   /** Get players who can still act (not folded, not all-in) */
@@ -106,14 +125,61 @@ class Table {
     return this.seats.find(p => p && p.id === token) || null;
   }
 
+  /** Handle player sit-out */
+  setSitOut(playerId) {
+    const player = this.findPlayer(playerId);
+    if (!player) return false;
+
+    player.setSitOut();
+    this.mitsuki(`${player.name} is sitting out. Taking a breather? The moon will keep your seat warm. 🌙`);
+    this.broadcast({ type: 'player_action', player: player.name, action: 'sit_out' });
+    
+    // Check if current player just sat out during their turn
+    if (this.phase !== 'waiting' && this.phase !== 'showdown') {
+      const currentPlayer = this.getCurrentPlayer();
+      if (currentPlayer && currentPlayer.id === playerId) {
+        // Auto-fold if it was their turn
+        this.handleAction(playerId, 'fold');
+      }
+    }
+    
+    return true;
+  }
+
+  /** Handle player return from sit-out */
+  returnFromSitOut(playerId) {
+    const player = this.findPlayer(playerId);
+    if (!player) return false;
+
+    player.returnFromSitOut();
+    this.mitsuki(`${player.name} is back! Welcome back to the table.`);
+    this.broadcast({ type: 'player_action', player: player.name, action: 'return' });
+    
+    return true;
+  }
+
+  /** Check for auto-remove players and clean them up */
+  cleanupAutoRemovePlayers() {
+    for (const player of this.seatedPlayers()) {
+      if (player.shouldAutoRemove) {
+        this.removePlayer(player.id);
+        this.mitsuki(`${player.name} was automatically removed after sitting out for 10 minutes.`);
+      }
+    }
+  }
+
   // ─── Hand Management ──────────────────────────────────────────
 
   /** Start a new hand */
   startHand() {
-    const eligible = this.seatedPlayers().filter(p => p.stack > 0);
+    // Clean up auto-remove players
+    this.cleanupAutoRemovePlayers();
+    
+    // Only count non-sitting-out players with chips
+    const eligible = this.seatedPlayers().filter(p => p.stack > 0 && !p.sitOut);
     if (eligible.length < config.MIN_PLAYERS) {
       this.phase = 'waiting';
-      this.mitsuki('🌙 Not enough players with chips. Mitsuki waits...');
+      this.mitsuki('🌙 Not enough active players with chips. Mitsuki waits...');
       return;
     }
 
@@ -150,7 +216,7 @@ class Table {
 
   /** Advance dealer button to next eligible seat */
   advanceDealer() {
-    const players = this.seatedPlayers().filter(p => p.stack > 0);
+    const players = this.seatedPlayers().filter(p => p.stack > 0 && !p.sitOut);
     if (this.dealerSeat === -1) {
       this.dealerSeat = players[0].seat;
     } else {
@@ -159,7 +225,7 @@ class Table {
       for (let i = 1; i <= config.MAX_PLAYERS; i++) {
         const idx = (this.dealerSeat + i) % config.MAX_PLAYERS;
         const p = this.seats[idx];
-        if (p && p.stack > 0) {
+        if (p && p.stack > 0 && !p.sitOut) {
           this.dealerSeat = idx;
           found = true;
           break;
@@ -186,15 +252,15 @@ class Table {
       bbPlayer = orderedFromDealer[2];
     }
 
-    const sbAmount = sbPlayer.bet(config.SMALL_BLIND);
+    const sbAmount = sbPlayer.bet(this.smallBlind);
     this.pot += sbAmount;
     sbPlayer.lastAction = 'small blind';
     this.mitsuki(`${sbPlayer.name} posts small blind (${sbAmount})`);
 
-    const bbAmount = bbPlayer.bet(config.BIG_BLIND);
+    const bbAmount = bbPlayer.bet(this.bigBlind);
     this.pot += bbAmount;
     bbPlayer.lastAction = 'big blind';
-    this.currentBetLevel = config.BIG_BLIND;
+    this.currentBetLevel = this.bigBlind;
     this.mitsuki(`${bbPlayer.name} posts big blind (${bbAmount})`);
 
     this.broadcast({
@@ -245,8 +311,8 @@ class Table {
       for (const p of this.activePlayers()) {
         p.currentBet = p.totalBetThisHand; // Blinds carry over for preflop
       }
-      this.currentBetLevel = config.BIG_BLIND;
-      this.minRaise = config.BIG_BLIND;
+      this.currentBetLevel = this.bigBlind;
+      this.minRaise = this.bigBlind;
     }
 
     // Find first player to act
@@ -322,19 +388,68 @@ class Table {
       playerBet: player.currentBet,
       toCall: this.currentBetLevel - player.currentBet,
       minRaise: this.minRaise,
+      timeBank: player.timeBank,
+      usingTimeBank: player.usingTimeBank,
     });
 
-    // Start turn timer
+    // Start turn timer (15 seconds normal)
     this.turnTimer = setTimeout(() => {
+      this.onTurnTimerExpired(player);
+    }, config.TURN_TIMER_MS);
+  }
+
+  /** Handle turn timer expiration - check time bank */
+  onTurnTimerExpired(player) {
+    if (player.timeBank > 0 && !player.usingTimeBank) {
+      // Activate time bank
+      player.usingTimeBank = true;
+      this.mitsuki(`⏰ Time Bank: ${player.timeBank}s for ${player.name}`);
+      
+      this.broadcast({
+        type: 'time_bank_activated',
+        player: player.name,
+        timeBank: player.timeBank,
+      });
+
+      // Start time bank countdown
+      this.startTimeBankCountdown(player);
+    } else {
+      // No time bank or already used up - auto-fold
       this.mitsuki(`⏰ ${player.name} ran out of time. Auto-fold.`);
       this.handleAction(player.id, 'fold');
-    }, config.TURN_TIMER_MS);
+    }
+  }
+
+  /** Start time bank countdown */
+  startTimeBankCountdown(player) {
+    const countdownInterval = setInterval(() => {
+      player.timeBank--;
+      
+      this.broadcast({
+        type: 'time_bank_update',
+        player: player.name,
+        timeBank: player.timeBank,
+      });
+
+      if (player.timeBank <= 0) {
+        clearInterval(countdownInterval);
+        this.mitsuki(`⏰ ${player.name} ran out of time bank. Auto-fold.`);
+        this.handleAction(player.id, 'fold');
+      }
+    }, 1000);
+
+    // Store the interval so we can clear it if player acts
+    this.timeBankTimer = countdownInterval;
   }
 
   clearTurnTimer() {
     if (this.turnTimer) {
       clearTimeout(this.turnTimer);
       this.turnTimer = null;
+    }
+    if (this.timeBankTimer) {
+      clearInterval(this.timeBankTimer);
+      this.timeBankTimer = null;
     }
   }
 
@@ -538,7 +653,7 @@ class Table {
       p.resetBetForRound();
     }
     this.currentBetLevel = 0;
-    this.minRaise = config.BIG_BLIND;
+    this.minRaise = this.bigBlind;
 
     switch (this.phase) {
       case 'preflop':
@@ -878,22 +993,38 @@ class Table {
 
   /** Record hand to history */
   recordHandHistory(playerHands) {
+    // Determine winner(s) and winnings
+    const winners = determineWinners(playerHands);
+    const winnerNames = winners.map(w => w.player.name);
+    
     const record = {
       handNumber: this.handNumber,
       timestamp: Date.now(),
       communityCards: this.communityCards.map(c => cardToString(c)),
-      players: playerHands.map(ph => ({
-        name: ph.player.name,
-        holeCards: ph.player.holeCards.map(c => cardToString(c)),
-        hand: ph.hand ? ph.hand.name : 'mucked',
-        stack: ph.player.stack,
+      players: playerHands.map(ph => {
+        const isWinner = winnerNames.includes(ph.player.name);
+        const winAmount = isWinner ? Math.floor(this.pot / winners.length) : 0;
+        return {
+          name: ph.player.name,
+          holeCards: ph.player.holeCards.map(c => cardToString(c)),
+          finalHand: ph.hand ? ph.hand.name : 'mucked',
+          won: isWinner,
+          amount: winAmount,
+        };
+      }),
+      pots: this.pots.map(pot => ({
+        name: pot.name,
+        amount: pot.amount,
+        eligible: pot.eligible,
       })),
-      pot: this.pot,
+      winner: winnerNames.length === 1 ? winnerNames[0] : winnerNames.join(', '),
+      totalPot: this.pot,
       log: [...this.currentHandLog],
     };
 
     this.handHistory.push(record);
-    if (this.handHistory.length > config.MAX_HAND_HISTORY) {
+    // Keep last 20 hands in memory  
+    if (this.handHistory.length > 20) {
       this.handHistory.shift();
     }
 
@@ -935,6 +1066,7 @@ class Table {
 
     return {
       tableId: this.id,
+      tableType: this.type,
       handNumber: this.handNumber,
       phase: this.phase,
       pot: this.pot,
@@ -947,6 +1079,11 @@ class Table {
       toCall,
       you: player.toPrivateJSON(),
       players: this.seats.map(p => p ? p.toPublicJSON() : null),
+      blinds: `${this.smallBlind}/${this.bigBlind}`,
+      buyInRange: `${this.minBuyIn}-${this.maxBuyIn}`,
+      handHistory: this.handHistory.slice(-5), // Last 5 hands for frontend
+      canRebuy: player.stack === 0,
+      canTopUp: player.stack > 0 && player.stack < config.MAX_BUY_IN,
     };
   }
 
@@ -954,13 +1091,15 @@ class Table {
   toPublicJSON() {
     return {
       id: this.id,
+      type: this.type,
       phase: this.phase,
       handNumber: this.handNumber,
       playerCount: this.seatedPlayers().length,
       maxPlayers: config.MAX_PLAYERS,
       pot: this.pot,
       pots: this.pots,
-      blinds: `${config.SMALL_BLIND}/${config.BIG_BLIND}`,
+      blinds: `${this.smallBlind}/${this.bigBlind}`,
+      buyInRange: `${this.minBuyIn}-${this.maxBuyIn}`,
       communityCards: this.communityCards,
     };
   }
