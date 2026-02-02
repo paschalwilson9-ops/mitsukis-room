@@ -2055,7 +2055,7 @@
                 seat.id = `seat-${i}`;
                 seat.innerHTML = `
                     <div class="player-avatar" style="display: none;"></div>
-                    <div class="player-name">Sit Here</div>
+                    <div class="player-name">—</div>
                     <div class="player-stack" style="display: none;">$0</div>
                     <div class="player-bet" style="display: none;">$0</div>
                     <div class="player-status" style="display: none;"></div>
@@ -2317,7 +2317,7 @@
                 
                 // Reset seat content
                 seat.querySelector('.player-avatar').style.display = 'none';
-                seat.querySelector('.player-name').textContent = 'Sit Here';
+                seat.querySelector('.player-name').textContent = '—';
                 seat.querySelector('.player-stack').style.display = 'none';
                 seat.querySelector('.player-bet').style.display = 'none';
                 seat.querySelector('.player-status').style.display = 'none';
