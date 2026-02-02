@@ -1,0 +1,22 @@
+#!/bin/bash
+# Block commits containing private keys or secrets
+# Born from getting robbed twice in two days
+
+STAGED=$(git diff --cached --diff-filter=ACM)
+
+# Check for hex strings that look like private keys (64 hex chars)
+if echo "$STAGED" | grep -qiE '(0x)?[0-9a-f]{64}'; then
+  echo "🚨 BLOCKED: Possible private key detected in staged changes!"
+  echo "Run 'git diff --cached' to find it."
+  echo "Use environment variables instead."
+  exit 1
+fi
+
+# Check for common secret patterns
+if echo "$STAGED" | grep -qiE '(private.?key|secret.?key|api.?key)\s*[:=]\s*["\x27][^\s]{10,}'; then
+  echo "🚨 BLOCKED: Possible hardcoded secret detected!"
+  echo "Use environment variables instead."
+  exit 1
+fi
+
+exit 0
