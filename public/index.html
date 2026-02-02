@@ -130,6 +130,28 @@
             z-index: 5;
         }
 
+        .left-panel {
+            width: 260px;
+            min-width: 260px;
+            background: linear-gradient(180deg, #0d0d1a 0%, #0a0a15 100%);
+            border-right: 1px solid rgba(136, 146, 176, 0.1);
+            display: flex;
+            flex-direction: column;
+            padding: 12px 0 0 0;
+        }
+
+        .left-panel .chat-entry {
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.03);
+            word-wrap: break-word;
+        }
+
+        .left-panel .chat-sender {
+            color: #c9a55a;
+            font-weight: 600;
+        }
+
         .game-area {
             flex: 1;
             background: radial-gradient(ellipse at center, #0a1a1a 0%, #050810 100%);
@@ -1468,6 +1490,10 @@
                 min-height: 100vh;
             }
 
+            .left-panel {
+                display: none;
+            }
+
             .main-container {
                 flex-direction: column;
                 height: auto;
@@ -1609,6 +1635,19 @@
     </header>
 
     <div class="main-container">
+        <!-- Left Chat Panel -->
+        <div class="left-panel" id="leftPanel">
+            <h2 style="font-family: 'Playfair Display', serif; font-size: 1.2em; margin-bottom: 10px; color: #c9a55a; text-align: center;">💬 Table Chat</h2>
+            <div id="chatMessagesLeft" style="flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 4px; font-size: 0.85em;">
+                <div style="color: #c9a55a; font-style: italic; text-align: center; margin-bottom: 8px;">Welcome to Mitsuki's Room 🌙</div>
+            </div>
+            <div style="display: flex; gap: 6px; padding: 8px;">
+                <input type="text" id="chatInputLeft" placeholder="Type a message..." maxlength="200" autocomplete="off" 
+                    style="flex: 1; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 6px; padding: 8px 12px; color: #c8d3dc; font-size: 0.85em; outline: none;"
+                    onkeypress="if(event.key==='Enter')sendChatLeft()">
+                <button onclick="sendChatLeft()" style="background: linear-gradient(135deg, #c9a55a, #d4a574); border: none; border-radius: 6px; padding: 8px 14px; color: #0a0a1a; font-weight: bold; cursor: pointer; font-size: 0.85em;">Send</button>
+            </div>
+        </div>
         <div class="game-area">
             <div class="poker-table">
                 <div class="felt-pattern"></div>
@@ -2768,24 +2807,41 @@
         function sendChat() {
             const input = document.getElementById('chatInput');
             const text = input.value.trim();
-            if (!text || !gameState.socket || gameState.socket.readyState !== 1) return;
-            
-            gameState.socket.send(JSON.stringify({ type: 'chat', text: text }));
+            if (!text) return;
+            const playerName = document.getElementById('playerName')?.value || 'You';
+            addChatMessage(playerName, text);
+            if (gameState.socket && gameState.socket.readyState === 1) {
+                gameState.socket.send(JSON.stringify({ type: 'chat', text: text }));
+            }
+            input.value = '';
+        }
+
+        function sendChatLeft() {
+            const input = document.getElementById('chatInputLeft');
+            const text = input.value.trim();
+            if (!text) return;
+            const playerName = document.getElementById('playerName')?.value || 'You';
+            addChatMessage(playerName, text);
+            if (gameState.socket && gameState.socket.readyState === 1) {
+                gameState.socket.send(JSON.stringify({ type: 'chat', text: text }));
+            }
             input.value = '';
         }
 
         function addChatMessage(sender, text) {
-            const container = document.getElementById('chatMessages');
-            const entry = document.createElement('div');
-            entry.className = 'chat-entry';
-            entry.innerHTML = `<span class="chat-sender">${sender}:</span> ${text}`;
-            container.appendChild(entry);
-            container.scrollTop = container.scrollHeight;
-            
-            // Keep max 50 messages
-            while (container.children.length > 50) {
-                container.removeChild(container.firstChild);
-            }
+            // Add to BOTH chat panels (left panel + sidebar)
+            ['chatMessages', 'chatMessagesLeft'].forEach(containerId => {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                const entry = document.createElement('div');
+                entry.className = 'chat-entry';
+                entry.innerHTML = `<span class="chat-sender">${sender}:</span> ${text}`;
+                container.appendChild(entry);
+                container.scrollTop = container.scrollHeight;
+                while (container.children.length > 50) {
+                    container.removeChild(container.firstChild);
+                }
+            });
         }
 
         // Show status message
