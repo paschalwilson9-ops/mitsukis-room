@@ -11,6 +11,7 @@ const http = require('http');
 const { WebSocketServer } = require('ws');
 const config = require('./config');
 const Table = require('./game/table');
+const TournamentManager = require('./game/tournament-manager');
 const createRoutes = require('./api/routes');
 
 // ─── Table Manager ────────────────────────────────────────────
@@ -97,6 +98,7 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 const tableManager = new TableManager();
+const tournamentManager = new TournamentManager(tableManager);
 
 // Middleware
 app.use(express.json());
@@ -123,7 +125,7 @@ app.get('/', (req, res) => {
 });
 
 // API routes
-app.use('/api', createRoutes(tableManager));
+app.use('/api', createRoutes(tableManager, tournamentManager));
 
 // ─── WebSocket ────────────────────────────────────────────────
 
@@ -201,4 +203,4 @@ server.listen(config.PORT, () => {
   console.log('');
 });
 
-module.exports = { app, server, tableManager };
+module.exports = { app, server, tableManager, tournamentManager };

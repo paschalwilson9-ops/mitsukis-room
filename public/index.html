@@ -2017,6 +2017,319 @@
                 padding: 8px 16px;
             }
         }
+
+        /* Tournament Lobby Styles */
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            padding: 20px 0;
+            background: rgba(10, 15, 30, 0.8);
+            border-bottom: 1px solid rgba(200, 211, 220, 0.1);
+        }
+
+        .mode-tabs {
+            display: flex;
+            gap: 20px;
+        }
+
+        .mode-tab {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 24px;
+            background: rgba(26, 26, 46, 0.8);
+            border: 2px solid rgba(200, 211, 220, 0.2);
+            border-radius: 12px;
+            color: #c8d3dc;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 200px;
+        }
+
+        .mode-tab:hover {
+            border-color: var(--accent-color);
+            background: rgba(49, 130, 206, 0.1);
+        }
+
+        .mode-tab.active {
+            border-color: var(--accent-color);
+            background: rgba(49, 130, 206, 0.2);
+            box-shadow: 0 0 20px rgba(49, 130, 206, 0.3);
+        }
+
+        .mode-icon {
+            font-size: 24px;
+        }
+
+        .mode-title {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .mode-desc {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .tournament-lobby {
+            min-height: calc(100vh - 140px);
+            background: rgba(10, 15, 30, 0.95);
+            padding: 40px 20px;
+        }
+
+        .lobby-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .lobby-header h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5em;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+
+        .prize-info {
+            font-size: 1.2em;
+            color: #fbbf24;
+            font-weight: 600;
+        }
+
+        .lobby-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .player-list-container h3 {
+            color: var(--accent-color);
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        .player-list {
+            background: rgba(26, 26, 46, 0.6);
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 300px;
+        }
+
+        .player-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            background: rgba(49, 130, 206, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .player-item.ready {
+            border-left-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .player-name {
+            font-weight: 500;
+        }
+
+        .player-status {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            background: rgba(107, 114, 128, 0.3);
+        }
+
+        .player-status.ready {
+            background: rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+
+        .lobby-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .mitsuki-lobby-avatar {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .mitsuki-lobby-avatar img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 3px solid var(--accent-color);
+            box-shadow: 0 0 30px var(--accent-glow);
+        }
+
+        .avatar-glow {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            animation: pulse 3s infinite;
+        }
+
+        .tournament-status {
+            margin-bottom: 30px;
+        }
+
+        .status-text {
+            font-size: 1.2em;
+            color: #c8d3dc;
+            margin-bottom: 10px;
+        }
+
+        .countdown-timer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .countdown-text {
+            font-size: 16px;
+            color: #8892b0;
+            margin-bottom: 10px;
+        }
+
+        .countdown-number {
+            font-size: 4em;
+            font-weight: bold;
+            color: #fbbf24;
+            text-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+            animation: pulse 1s infinite;
+        }
+
+        .countdown-label {
+            font-size: 14px;
+            color: #8892b0;
+            margin-top: 5px;
+        }
+
+        .lobby-actions {
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .join-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .join-form input {
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 2px solid rgba(200, 211, 220, 0.2);
+            background: rgba(26, 26, 46, 0.8);
+            color: #c8d3dc;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .join-form input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .join-btn, .ready-btn, .leave-btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .join-btn {
+            background: linear-gradient(135deg, var(--accent-color), #60a5fa);
+            color: white;
+        }
+
+        .join-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px var(--accent-glow);
+        }
+
+        .ready-btn {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .ready-btn.ready {
+            background: linear-gradient(135deg, #ef4444, #f87171);
+        }
+
+        .ready-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .leave-btn {
+            background: rgba(107, 114, 128, 0.6);
+            color: #c8d3dc;
+        }
+
+        .leave-btn:hover {
+            background: rgba(239, 68, 68, 0.8);
+        }
+
+        .joined-actions {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tournament-info {
+            background: rgba(26, 26, 46, 0.6);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .tournament-info h4 {
+            color: var(--accent-color);
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .tournament-info ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .tournament-info li {
+            padding: 8px 0;
+            color: #c8d3dc;
+            border-bottom: 1px solid rgba(200, 211, 220, 0.1);
+        }
+
+        .tournament-info li:last-child {
+            border-bottom: none;
+        }
+
+        @media (max-width: 768px) {
+            .lobby-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .mode-tabs {
+                flex-direction: column;
+            }
+            
+            .lobby-header h2 {
+                font-size: 2em;
+            }
+        }
     </style>
 </head>
 <body>
@@ -2028,7 +2341,87 @@
         <div class="motto">The moon watches. The cards fall.</div>
     </header>
 
-    <div class="main-container">
+    <!-- Game Mode Selector -->
+    <div class="mode-selector" id="modeSelector">
+        <div class="mode-tabs">
+            <button class="mode-tab active" onclick="switchMode('casual')" id="casualTab">
+                <span class="mode-icon">🃏</span>
+                <div class="mode-info">
+                    <div class="mode-title">Casual Play</div>
+                    <div class="mode-desc">Sit & go • Rebuys allowed</div>
+                </div>
+            </button>
+            <button class="mode-tab" onclick="switchMode('tournament')" id="tournamentTab">
+                <span class="mode-icon">🏆</span>
+                <div class="mode-info">
+                    <div class="mode-title">Tournament</div>
+                    <div class="mode-desc">Fixed buy-in • Winner takes all</div>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Tournament Lobby -->
+    <div class="tournament-lobby" id="tournamentLobby" style="display: none;">
+        <div class="lobby-header">
+            <h2 id="tournamentName">The Second Mitsuki Invitational</h2>
+            <div class="prize-info" id="prizeInfo">Prize Pool: $1 USDC</div>
+        </div>
+        
+        <div class="lobby-content">
+            <div class="lobby-left">
+                <div class="player-list-container">
+                    <h3>Players <span id="playerCount">0/8</span></h3>
+                    <div class="player-list" id="playerList">
+                        <!-- Players will be populated here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="lobby-center">
+                <div class="mitsuki-lobby-avatar">
+                    <img src="/img/dealer-idle.png" alt="Mitsuki" />
+                    <div class="avatar-glow"></div>
+                </div>
+                
+                <div class="tournament-status" id="tournamentStatus">
+                    <div class="status-text">Waiting for players to join...</div>
+                    <div class="countdown-timer" id="countdownTimer" style="display: none;">
+                        <div class="countdown-text">Tournament starting in</div>
+                        <div class="countdown-number" id="countdownNumber">60</div>
+                        <div class="countdown-label">seconds</div>
+                    </div>
+                </div>
+                
+                <div class="lobby-actions" id="lobbyActions">
+                    <div class="join-form" id="joinForm">
+                        <input type="text" id="playerNameInput" placeholder="Enter your name..." maxlength="20" />
+                        <button onclick="joinTournament()" class="join-btn">Join Tournament</button>
+                    </div>
+                    
+                    <div class="joined-actions" id="joinedActions" style="display: none;">
+                        <button onclick="toggleReady()" class="ready-btn" id="readyBtn">Ready</button>
+                        <button onclick="leaveTournament()" class="leave-btn">Leave</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="lobby-right">
+                <div class="tournament-info">
+                    <h4>Tournament Rules</h4>
+                    <ul>
+                        <li>Fixed buy-in: 200 chips</li>
+                        <li>4-8 players</li>
+                        <li>No rebuys</li>
+                        <li>Winner takes all</li>
+                        <li>Elimination order tracked</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container" id="mainContainer">
         <!-- Left Chat Panel -->
         <div class="left-panel" id="leftPanel">
             <h2 style="font-family: 'Playfair Display', serif; font-size: 1.2em; margin-bottom: 10px; color: #c9a55a; text-align: center;">💬 Table Chat</h2>
@@ -2369,7 +2762,16 @@
             playerSeat: null,
             isSpectating: true,
             connected: false,
-            socket: null
+            socket: null,
+            currentMode: 'casual'  // 'casual' or 'tournament'
+        };
+
+        // Tournament state
+        let tournamentState = {
+            joined: false,
+            ready: false,
+            tournament: null,
+            countdownInterval: null
         };
 
         // Crypto wallet state
@@ -4759,6 +5161,263 @@
                 if (motto) motto.textContent = "The moon watches. The cards fall.";
             }
         }
+
+        // ===== TOURNAMENT FUNCTIONS =====
+
+        // Switch between casual and tournament modes
+        function switchMode(mode) {
+            gameState.currentMode = mode;
+            
+            // Update tab styles
+            document.getElementById('casualTab').classList.toggle('active', mode === 'casual');
+            document.getElementById('tournamentTab').classList.toggle('active', mode === 'tournament');
+            
+            // Show/hide appropriate UI
+            if (mode === 'tournament') {
+                document.getElementById('tournamentLobby').style.display = 'block';
+                document.getElementById('mainContainer').style.display = 'none';
+                loadTournamentStatus();
+            } else {
+                document.getElementById('tournamentLobby').style.display = 'none';
+                document.getElementById('mainContainer').style.display = 'flex';
+            }
+        }
+
+        // Load current tournament status
+        async function loadTournamentStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/api/tournament/status`);
+                const data = await response.json();
+                
+                if (data.tournament) {
+                    updateTournamentDisplay(data.tournament);
+                } else {
+                    // No active tournament
+                    updateTournamentDisplay(null);
+                }
+            } catch (error) {
+                console.error('Error loading tournament status:', error);
+                showStatus('Failed to load tournament status', 'error');
+            }
+        }
+
+        // Update tournament display
+        function updateTournamentDisplay(tournament) {
+            if (!tournament) {
+                // No tournament - show join interface
+                document.getElementById('tournamentName').textContent = 'The Second Mitsuki Invitational';
+                document.getElementById('prizeInfo').textContent = 'Prize Pool: $1 USDC';
+                document.getElementById('playerCount').textContent = '0/8';
+                document.getElementById('playerList').innerHTML = '<div style="text-align: center; color: #8892b0; padding: 20px;">No players yet</div>';
+                document.getElementById('tournamentStatus').innerHTML = '<div class="status-text">Waiting for players to join...</div>';
+                document.getElementById('joinForm').style.display = 'block';
+                document.getElementById('joinedActions').style.display = 'none';
+                document.getElementById('countdownTimer').style.display = 'none';
+                return;
+            }
+
+            // Update tournament info
+            document.getElementById('tournamentName').textContent = tournament.name;
+            document.getElementById('prizeInfo').textContent = `Prize Pool: ${tournament.prizePool}`;
+            document.getElementById('playerCount').textContent = `${tournament.playerCount}/${tournament.maxPlayers}`;
+
+            // Update player list
+            const playerList = document.getElementById('playerList');
+            if (tournament.players && tournament.players.length > 0) {
+                playerList.innerHTML = tournament.players.map(player => `
+                    <div class="player-item ${player.ready ? 'ready' : ''}">
+                        <span class="player-name">${player.name}</span>
+                        <span class="player-status ${player.ready ? 'ready' : ''}">${player.ready ? 'Ready' : 'Waiting'}</span>
+                    </div>
+                `).join('');
+            } else {
+                playerList.innerHTML = '<div style="text-align: center; color: #8892b0; padding: 20px;">No players yet</div>';
+            }
+
+            // Update status and countdown
+            if (tournament.state === 'countdown') {
+                document.getElementById('tournamentStatus').innerHTML = '';
+                document.getElementById('countdownTimer').style.display = 'block';
+                
+                // Start countdown if not already running
+                if (!tournamentState.countdownInterval) {
+                    startCountdownTimer(tournament.countdownTime);
+                }
+            } else if (tournament.state === 'starting') {
+                document.getElementById('countdownTimer').style.display = 'none';
+                document.getElementById('tournamentStatus').innerHTML = '<div class="status-text">🌙 Tournament starting...</div>';
+            } else if (tournament.state === 'running') {
+                document.getElementById('countdownTimer').style.display = 'none';
+                document.getElementById('tournamentStatus').innerHTML = '<div class="status-text">🃏 Tournament in progress</div>';
+                // Switch to table view
+                switchMode('casual'); // This will show the game table
+            } else {
+                document.getElementById('countdownTimer').style.display = 'none';
+                document.getElementById('tournamentStatus').innerHTML = '<div class="status-text">Waiting for players to join...</div>';
+            }
+
+            // Show appropriate action buttons
+            const isJoined = tournament.players.some(p => p.id === gameState.token);
+            if (isJoined) {
+                document.getElementById('joinForm').style.display = 'none';
+                document.getElementById('joinedActions').style.display = 'block';
+                
+                const player = tournament.players.find(p => p.id === gameState.token);
+                const readyBtn = document.getElementById('readyBtn');
+                if (player && player.ready) {
+                    readyBtn.textContent = 'Not Ready';
+                    readyBtn.classList.add('ready');
+                } else {
+                    readyBtn.textContent = 'Ready';
+                    readyBtn.classList.remove('ready');
+                }
+            } else {
+                document.getElementById('joinForm').style.display = 'block';
+                document.getElementById('joinedActions').style.display = 'none';
+            }
+        }
+
+        // Join tournament
+        async function joinTournament() {
+            const nameInput = document.getElementById('playerNameInput');
+            const name = nameInput.value.trim();
+            
+            if (!name) {
+                showStatus('Please enter your name', 'error');
+                nameInput.focus();
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/tournament/join`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    showStatus(data.error, 'error');
+                } else {
+                    gameState.token = data.token;
+                    tournamentState.joined = true;
+                    showStatus(data.message, 'success');
+                    loadTournamentStatus();
+                    
+                    // Store token for reconnection
+                    localStorage.setItem('mitsuki_tournament_token', data.token);
+                    localStorage.setItem('mitsuki_name', name);
+                }
+            } catch (error) {
+                console.error('Error joining tournament:', error);
+                showStatus('Failed to join tournament', 'error');
+            }
+        }
+
+        // Toggle ready status
+        async function toggleReady() {
+            if (!gameState.token) return;
+
+            const player = tournamentState.tournament?.players?.find(p => p.id === gameState.token);
+            const newReadyState = !(player && player.ready);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/tournament/ready`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        token: gameState.token, 
+                        ready: newReadyState 
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    showStatus(data.error, 'error');
+                } else {
+                    showStatus(data.message, 'success');
+                    loadTournamentStatus();
+                }
+            } catch (error) {
+                console.error('Error toggling ready:', error);
+                showStatus('Failed to update ready status', 'error');
+            }
+        }
+
+        // Leave tournament
+        async function leaveTournament() {
+            if (!gameState.token) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/tournament/leave`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: gameState.token })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    showStatus(data.error, 'error');
+                } else {
+                    gameState.token = null;
+                    tournamentState.joined = false;
+                    tournamentState.ready = false;
+                    showStatus(data.message, 'success');
+                    loadTournamentStatus();
+                    
+                    // Clear stored token
+                    localStorage.removeItem('mitsuki_tournament_token');
+                }
+            } catch (error) {
+                console.error('Error leaving tournament:', error);
+                showStatus('Failed to leave tournament', 'error');
+            }
+        }
+
+        // Start countdown timer
+        function startCountdownTimer(seconds) {
+            if (tournamentState.countdownInterval) {
+                clearInterval(tournamentState.countdownInterval);
+            }
+
+            let timeLeft = seconds;
+            document.getElementById('countdownNumber').textContent = timeLeft;
+
+            tournamentState.countdownInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('countdownNumber').textContent = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(tournamentState.countdownInterval);
+                    tournamentState.countdownInterval = null;
+                }
+            }, 1000);
+        }
+
+        // Initialize tournament on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check for saved tournament token
+            const savedTournamentToken = localStorage.getItem('mitsuki_tournament_token');
+            if (savedTournamentToken) {
+                gameState.token = savedTournamentToken;
+                tournamentState.joined = true;
+            }
+            
+            // Load tournament status
+            if (gameState.currentMode === 'tournament') {
+                loadTournamentStatus();
+            }
+            
+            // Poll tournament status periodically
+            setInterval(() => {
+                if (gameState.currentMode === 'tournament') {
+                    loadTournamentStatus();
+                }
+            }, 3000);
+        });
     </script>
 </body>
 </html>

@@ -14,7 +14,7 @@ const PHASES = ['waiting', 'preflop', 'flop', 'turn', 'river', 'showdown'];
 class Table {
   constructor(id = uuidv4(), options = {}) {
     this.id = id;
-    this.type = options.type || 'free';  // 'free' or 'paid'
+    this.type = options.type || 'free';  // 'free', 'paid', or 'tournament'
     
     // Set buy-in limits based on table type
     if (this.type === 'paid') {
@@ -22,6 +22,12 @@ class Table {
       this.maxBuyIn = options.maxBuyIn || config.MAX_BUY_IN * 10; // $4000 default for paid
       this.smallBlind = options.smallBlind || config.SMALL_BLIND * 10; // $10 default
       this.bigBlind = options.bigBlind || config.BIG_BLIND * 10; // $20 default
+    } else if (this.type === 'tournament') {
+      this.minBuyIn = options.minBuyIn || config.DEFAULT_BUY_IN; // Fixed buy-in
+      this.maxBuyIn = options.maxBuyIn || config.DEFAULT_BUY_IN; // Fixed buy-in
+      this.smallBlind = config.SMALL_BLIND; // $1
+      this.bigBlind = config.BIG_BLIND;     // $2
+      this.isRebuyAllowed = options.isRebuyAllowed || false; // No rebuys in tournaments
     } else {
       this.minBuyIn = config.MIN_BUY_IN;   // $50
       this.maxBuyIn = config.MAX_BUY_IN;   // $200

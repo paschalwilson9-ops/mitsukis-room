@@ -30,7 +30,7 @@ const usdcContract = new ethers.Contract(USDC_ADDRESS, usdcAbi, serverWallet);
 // Track crypto balances
 const cryptoBalances = new Map(); // address -> balance in USDC (6 decimals)
 
-function createRoutes(tableManager) {
+function createRoutes(tableManager, tournamentManager) {
   const router = express.Router();
 
   /**
@@ -625,6 +625,95 @@ function createRoutes(tableManager) {
       minDeposit: 1000000, // $1 USDC
       maxDeposit: 10000000000, // $10k USDC
     });
+  });
+
+  // ===== TOURNAMENT ENDPOINTS =====
+
+  /**
+   * POST /api/tournament/join
+   * Join tournament lobby. Body: { name, tournamentOptions? }
+   */
+  router.post('/tournament/join', (req, res) => {
+    const { name, tournamentOptions = {} } = req.body;
+
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return res.status(400).json({ error: 'Name is required' });
+    }
+
+    const trimmedName = name.trim();
+    const playerId = `tournament_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    const result = tournamentManager.joinTournament(playerId, trimmedName, tournamentOptions);
+    
+    if (result.error) {
+      return res.status(400).json(result);
+    }
+
+    res.json({
+      ...result,
+      token: playerId,
+      tournamentId: tournamentManager.getActiveTournament()?.id,
+    });
+  });
+
+  /**
+   * GET /api/tournament/status
+   * Get current tournament status
+   */
+  router.get('/tournament/status', (req, res) => {
+    const status = tournamentManager.getTournamentStatus();
+    
+    if (!status) {
+      return res.json({ 
+        tournament: null,
+        message: 'No active tournament. Join to create one!'
+      });
+    }
+
+    res.json({ tournament: status });
+  });
+
+  /**
+   * POST /api/tournament/ready
+   * Set ready status in tournament lobby. Body: { token, ready }
+   */
+  router.post('/tournament/ready', (req, res) => {
+    const { token, ready = true } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({ error: 'Token is required' });
+    }
+
+    const result = tournamentManager.setPlayerReady(token, ready);
+    
+    if (result.error) {
+      return res.status(400).json(result);
+    }
+
+    res.json({
+      ...result,
+      message: ready ? 'You are ready!' : 'Ready status removed'
+    });
+  });
+
+  /**
+   * POST /api/tournament/leave
+   * Leave tournament lobby. Body: { token }
+   */
+  router.post('/tournament/leave', (req, res) => {
+    const { token } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({ error: 'Token is required' });
+    }
+
+    const result = tournamentManager.leaveTournament(token);
+    
+    if (result.error) {
+      return res.status(400).json(result);
+    }
+
+    res.json(result);
   });
 
   return router;
