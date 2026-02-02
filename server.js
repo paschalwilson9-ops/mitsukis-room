@@ -161,7 +161,7 @@ wss.on('connection', (ws, req) => {
       }
       // Chat messages
       if (msg.type === 'chat' && msg.text) {
-        const player = table.players.find(p => p && p.token === token);
+        const player = table.seats.find(p => p && p.id === token);
         const playerName = player ? player.name : 'Spectator';
         const chatMsg = {
           type: 'chat',
