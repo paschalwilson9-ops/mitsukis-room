@@ -5184,7 +5184,13 @@
         }
 
         // Load current tournament status
+        // Debounce flag to prevent overlapping tournament status fetches
+        let _tournamentStatusLoading = false;
+        
         async function loadTournamentStatus(retries = 3) {
+            if (_tournamentStatusLoading) return; // Skip if already loading
+            _tournamentStatusLoading = true;
+            
             for (let attempt = 1; attempt <= retries; attempt++) {
                 try {
                     const response = await fetch(`${API_BASE}/api/tournament/status`);
@@ -5196,19 +5202,17 @@
                         // No active tournament
                         updateTournamentDisplay(null);
                     }
+                    _tournamentStatusLoading = false;
                     return; // Success - exit
                 } catch (error) {
-                    console.error(`Error loading tournament status (attempt ${attempt}/${retries}):`, error);
+                    console.error(`Tournament status attempt ${attempt}/${retries}:`, error.message);
                     if (attempt < retries) {
-                        // Wait before retry (exponential backoff: 1s, 2s, 4s)
                         await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt - 1)));
-                    } else {
-                        showStatus('Failed to load tournament status — retrying...', 'error');
-                        // Auto-retry after 5s even after all attempts fail
-                        setTimeout(() => loadTournamentStatus(2), 5000);
                     }
+                    // No error toast — silently retry on next poll cycle
                 }
             }
+            _tournamentStatusLoading = false;
         }
 
         // Update tournament display
