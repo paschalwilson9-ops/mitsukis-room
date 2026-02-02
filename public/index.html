@@ -173,7 +173,7 @@
             top: 10%;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 10;
+            z-index: 3;
             transition: all 0.5s ease;
             width: 200px;
             height: 200px;
@@ -368,15 +368,16 @@
         }
 
         /* Position player seats around the table */
-        .seat-0 { top: -60px; left: 50%; transform: translateX(-50%); }
-        .seat-1 { top: -40px; right: 20px; }
-        .seat-2 { top: 20px; right: -40px; }
-        .seat-3 { bottom: 20px; right: -40px; }
-        .seat-4 { bottom: -60px; left: 50%; transform: translateX(-50%); }
-        .seat-5 { bottom: 20px; left: -40px; }
-        .seat-6 { top: 20px; left: -40px; }
-        .seat-7 { top: -40px; left: 20px; }
-        .seat-8 { top: 10px; left: 50%; transform: translateX(-50%); }
+        /* 9 seats distributed evenly around oval, starting from bottom center going clockwise */
+        .seat-0 { bottom: -65px; left: 50%; transform: translateX(-50%); }       /* bottom center (hero) */
+        .seat-1 { bottom: -30px; left: 15%; }                                      /* bottom left */
+        .seat-2 { top: 50%; left: -50px; transform: translateY(-50%); }            /* mid left */
+        .seat-3 { top: -30px; left: 15%; }                                         /* top left */
+        .seat-4 { top: -65px; left: 50%; transform: translateX(-50%); }            /* top center */
+        .seat-5 { top: -30px; right: 15%; }                                        /* top right */
+        .seat-6 { top: 50%; right: -50px; transform: translateY(-50%); }           /* mid right */
+        .seat-7 { bottom: -30px; right: 15%; }                                     /* bottom right */
+        .seat-8 { bottom: -65px; right: 30%; }                                     /* bottom right-center */
 
         .player-cards {
             position: absolute;
@@ -653,7 +654,8 @@
                 <div class="dealer-sprite idle" id="dealerSprite">
                     <div class="dealer-glow"></div>
                     <img src="/img/dealer-idle.png" id="dealer-idle-img" class="visible" alt="Mitsuki - Idle">
-                    <img src="/img/dealer-thankyou.jpg" id="dealer-thankyou-img" class="hidden" alt="Mitsuki - Thank You">
+                    <img src="/img/dealer-dealing.png" id="dealer-dealing-img" class="hidden" alt="Mitsuki - Dealing">
+                    <img src="/img/dealer-thankyou.png" id="dealer-thankyou-img" class="hidden" alt="Mitsuki - Thank You">
                 </div>
                 
                 <!-- Community Cards -->
@@ -804,12 +806,14 @@
         // Show a specific dealer sprite
         function showDealerState(state) {
             const idleImg = document.getElementById('dealer-idle-img');
+            const dealingImg = document.getElementById('dealer-dealing-img');
             const thankyouImg = document.getElementById('dealer-thankyou-img');
             
-            if (!idleImg || !thankyouImg) return;
+            if (!idleImg || !dealingImg || !thankyouImg) return;
             
             // Hide all
             idleImg.className = 'hidden';
+            dealingImg.className = 'hidden';
             thankyouImg.className = 'hidden';
             
             switch (state) {
@@ -817,8 +821,7 @@
                     thankyouImg.className = 'visible';
                     break;
                 case 'dealing':
-                    // Use idle for dealing until we get a dealing PNG
-                    idleImg.className = 'visible';
+                    dealingImg.className = 'visible';
                     break;
                 default:
                     idleImg.className = 'visible';
