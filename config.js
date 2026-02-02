@@ -15,9 +15,9 @@ module.exports = {
   SMALL_BLIND: 1,
   BIG_BLIND: 2,
 
-  // Buy-in (tournament mode: fixed stack)
-  MIN_BUY_IN: 200,   // Fixed for tournament
-  MAX_BUY_IN: 200,   // Fixed for tournament
+  // Buy-in
+  MIN_BUY_IN: 20,
+  MAX_BUY_IN: 1000,
   DEFAULT_BUY_IN: 200,
 
   // Timing

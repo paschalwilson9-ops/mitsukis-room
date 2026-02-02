@@ -15,7 +15,7 @@ const RPC_URL = 'https://mainnet.base.org';
 
 // Initialize ethers
 const provider = new ethers.JsonRpcProvider(RPC_URL);
-const privateKey = '0x05d56ba9623a7be627a61a851bd295d7c0d818448ac827eed9002d318c032fe5';
+const privateKey = process.env.SERVER_WALLET_KEY || '';
 const serverWallet = new ethers.Wallet(privateKey, provider);
 
 // USDC contract interface (minimal)
