@@ -1936,9 +1936,40 @@
             initializeSeats();
             loadLeaderboard();
             loadHandHistory();
-            initializeWebSocket();
             createMoonDust();
             loadCryptoConfig();
+            
+            // Recover session from localStorage on refresh
+            const savedToken = localStorage.getItem('mitsuki_token');
+            if (savedToken) {
+                // Test if token is still valid
+                fetch(`${API_BASE}/api/state/${savedToken}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data.error) {
+                            gameState.token = savedToken;
+                            gameState.playerSeat = data.you.seat;
+                            gameState.isSpectating = false;
+                            document.getElementById('joinForm').style.display = 'none';
+                            document.getElementById('leaveSection').style.display = 'block';
+                            document.getElementById('playerName').value = localStorage.getItem('mitsuki_name') || '';
+                            showStatus('Session restored!', 'success');
+                            updateGameDisplay(data);
+                        } else {
+                            // Token expired, clear it
+                            localStorage.removeItem('mitsuki_token');
+                            localStorage.removeItem('mitsuki_name');
+                        }
+                        initializeWebSocket();
+                    })
+                    .catch(() => {
+                        localStorage.removeItem('mitsuki_token');
+                        localStorage.removeItem('mitsuki_name');
+                        initializeWebSocket();
+                    });
+            } else {
+                initializeWebSocket();
+            }
             
             // Chat enter key
             document.getElementById('chatInput').addEventListener('keypress', function(e) {
@@ -2122,6 +2153,10 @@
                     gameState.playerSeat = data.seat;
                     gameState.isSpectating = false;
                     
+                    // Persist session for refresh recovery
+                    localStorage.setItem('mitsuki_token', data.token);
+                    localStorage.setItem('mitsuki_name', name);
+                    
                     document.getElementById('joinForm').style.display = 'none';
                     document.getElementById('leaveSection').style.display = 'block';
                     
@@ -2170,6 +2205,10 @@
             gameState.token = null;
             gameState.playerSeat = null;
             gameState.isSpectating = true;
+            
+            // Clear saved session
+            localStorage.removeItem('mitsuki_token');
+            localStorage.removeItem('mitsuki_name');
             
             document.getElementById('joinForm').style.display = 'block';
             document.getElementById('leaveSection').style.display = 'none';
