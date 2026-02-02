@@ -100,6 +100,7 @@ const tableManager = new TableManager();
 
 // Middleware
 app.use(express.json());
+app.use(express.static('public'));
 
 // Welcome route
 app.get('/', (req, res) => {
