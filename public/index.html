@@ -417,9 +417,31 @@
             text-align: center;
             box-shadow: 0 0 15px rgba(136, 146, 176, 0.1);
             transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
-            opacity: 0.3;
+            opacity: 1;
             backdrop-filter: blur(3px);
             overflow: visible;
+        }
+
+        .player-seat.empty {
+            opacity: 0;
+            background: transparent;
+            border: 2px dashed rgba(136, 146, 176, 0.25);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .player-seat.empty:hover {
+            opacity: 1;
+            background: rgba(136, 146, 176, 0.08);
+            border-color: rgba(136, 146, 176, 0.5);
+        }
+
+        .player-seat.empty .player-name {
+            font-size: 12px;
+            color: #8892b0;
+            letter-spacing: 0.5px;
         }
 
         .player-seat:not(.empty) {
@@ -583,14 +605,14 @@
 
         /* Position player seats around the table */
         /* 9 seats distributed evenly around oval — no overlapping */
-        .seat-0 { bottom: -70px; left: 50%; transform: translateX(-50%); }         /* bottom center (hero) */
-        .seat-1 { bottom: -20px; left: 5%; }                                       /* bottom left */
-        .seat-2 { top: 40%; left: -60px; }                                         /* mid left */
-        .seat-3 { top: -20px; left: 12%; }                                         /* top left */
-        .seat-4 { top: -70px; left: 50%; transform: translateX(-50%); }            /* top center */
-        .seat-5 { top: -20px; right: 12%; }                                        /* top right */
-        .seat-6 { top: 40%; right: -60px; }                                        /* mid right */
-        .seat-7 { bottom: -20px; right: 5%; }                                      /* bottom right */
+        .seat-0 { bottom: -45px; left: 50%; transform: translateX(-50%); }         /* bottom center (hero) */
+        .seat-1 { bottom: -10px; left: 3%; }                                       /* bottom left */
+        .seat-2 { top: 38%; left: -30px; }                                         /* mid left */
+        .seat-3 { top: -15px; left: 10%; }                                         /* top left */
+        .seat-4 { top: -45px; left: 50%; transform: translateX(-50%); }            /* top center */
+        .seat-5 { top: -15px; right: 10%; }                                        /* top right */
+        .seat-6 { top: 38%; right: -30px; }                                        /* mid right */
+        .seat-7 { bottom: -10px; right: 3%; }                                      /* bottom right */
         .seat-8 { display: none; }                                                  /* hidden - 8 seats is standard */
 
         .player-cards {
@@ -999,13 +1021,14 @@
         /* Empty State */
         .empty-state {
             position: absolute;
-            top: 50%;
+            top: 25%;
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
             z-index: 3;
             opacity: 0;
             transition: opacity 0.5s ease;
+            pointer-events: none;
         }
 
         .empty-state.visible {
@@ -1593,14 +1616,14 @@
             }
 
             /* Adjust seat positions for mobile */
-            .seat-0 { bottom: -60px; }
-            .seat-1 { bottom: -15px; left: 2%; }
-            .seat-2 { top: 35%; left: -50px; }
-            .seat-3 { top: -15px; left: 8%; }
-            .seat-4 { top: -60px; }
-            .seat-5 { top: -15px; right: 8%; }
-            .seat-6 { top: 35%; right: -50px; }
-            .seat-7 { bottom: -15px; right: 2%; }
+            .seat-0 { bottom: -40px; }
+            .seat-1 { bottom: -8px; left: 2%; }
+            .seat-2 { top: 35%; left: -25px; }
+            .seat-3 { top: -12px; left: 8%; }
+            .seat-4 { top: -40px; }
+            .seat-5 { top: -12px; right: 8%; }
+            .seat-6 { top: 35%; right: -25px; }
+            .seat-7 { bottom: -8px; right: 2%; }
         }
 
         @media (max-width: 480px) {
@@ -2055,7 +2078,7 @@
                 seat.id = `seat-${i}`;
                 seat.innerHTML = `
                     <div class="player-avatar" style="display: none;"></div>
-                    <div class="player-name">—</div>
+                    <div class="player-name">Sit Here</div>
                     <div class="player-stack" style="display: none;">$0</div>
                     <div class="player-bet" style="display: none;">$0</div>
                     <div class="player-status" style="display: none;"></div>
@@ -2172,13 +2195,22 @@
             }
         }
 
+        // Track hand number to reset card caches on new hand
+        let _lastHandNumber = null;
+
         // Update the game display
         function updateGameDisplay(state) {
+            // Reset card caches when hand changes
+            if (state.handNumber !== _lastHandNumber) {
+                _lastCommunityKey = null;
+                _lastHoleKey = null;
+                _lastHandNumber = state.handNumber;
+            }
+
             try {
                 // Update players FIRST — most important visual
                 const players = state.players || [];
                 const validPlayers = players.filter(p => p !== null);
-                console.log('Rendering', validPlayers.length, 'players:', validPlayers.map(p => p.name + '@seat' + p.seat));
                 updatePlayers(validPlayers);
             } catch (e) {
                 console.error('updatePlayers failed:', e);
@@ -2187,6 +2219,9 @@
             try {
                 // Update empty state visibility
                 updateEmptyState(state);
+
+                // Update phase indicator
+                updatePhaseIndicator(state);
 
                 // Update pot
                 updatePotDisplay(state.pot || 0, state.sidePots || []);
@@ -2213,17 +2248,47 @@
             }
         }
 
-        // Update empty state
+        // Show current game phase on the table
+        function updatePhaseIndicator(state) {
+            let indicator = document.getElementById('phaseIndicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.id = 'phaseIndicator';
+                indicator.style.cssText = 'position:absolute;top:12px;left:50%;transform:translateX(-50%);font-size:0.85em;font-weight:600;color:#8892b0;text-transform:uppercase;letter-spacing:2px;z-index:6;text-shadow:0 0 10px rgba(136,146,176,0.5);';
+                document.querySelector('.poker-table').appendChild(indicator);
+            }
+            
+            const phase = state.phase || 'waiting';
+            const phaseLabels = {
+                waiting: '',
+                preflop: '● Pre-Flop',
+                flop: '●● Flop',
+                turn: '●●● Turn',
+                river: '●●●● River',
+                showdown: '🏆 Showdown'
+            };
+            
+            const isYourTurn = state.isYourTurn || state.isPlayerTurn;
+            if (isYourTurn) {
+                indicator.style.color = '#60a5fa';
+                indicator.textContent = (phaseLabels[phase] || phase) + ' — YOUR TURN';
+            } else if (phase === 'waiting') {
+                indicator.textContent = '';
+            } else {
+                indicator.style.color = '#8892b0';
+                indicator.textContent = phaseLabels[phase] || phase;
+            }
+        }
+
+        // Update empty state — only show when zero players are seated
         function updateEmptyState(state) {
             const emptyState = document.getElementById('emptyState');
-            const activePlayers = (state.players || []).filter(p => p && (p.active || p.status === 'active')).length;
+            const seatedPlayers = (state.players || []).filter(p => p && p.name).length;
             
-            if (activePlayers < 2) {
+            if (seatedPlayers === 0) {
                 emptyState.classList.add('visible');
                 const p = emptyState.querySelector('p');
-                p.textContent = activePlayers === 0 ? 
-                    'Waiting for players to join...' : 
-                    `Need ${2 - activePlayers} more player${2 - activePlayers > 1 ? 's' : ''} to start`;
+                p.textContent = 'Waiting for players to join...';
             } else {
                 emptyState.classList.remove('visible');
             }
@@ -2276,13 +2341,22 @@
             });
         }
 
+        // Track previous card states to prevent re-render on poll
+        let _lastCommunityKey = null;
+        let _lastHoleKey = null;
+
         // Update community cards
         function updateCommunityCards(cards) {
-            const container = document.getElementById('communityCards');
-            const currentCards = container.children.length;
+            const key = JSON.stringify(cards);
+            if (key === _lastCommunityKey) return; // unchanged — skip
             
-            // Only animate new cards
-            if (cards.length > currentCards) {
+            const container = document.getElementById('communityCards');
+            const prevCount = container.querySelectorAll('.card:not(.back)').length;
+            const isNewCards = cards.length > prevCount;
+            
+            _lastCommunityKey = key;
+
+            if (isNewCards) {
                 setDealerAnimation('dealing');
                 playSound('dealSound');
             }
@@ -2290,18 +2364,17 @@
             container.innerHTML = '';
             
             cards.forEach((card, index) => {
-                setTimeout(() => {
-                    const cardElement = createCardElement(card, false);
-                    cardElement.classList.add('dealing');
+                const cardElement = createCardElement(card, false);
+                if (isNewCards && index >= prevCount) {
+                    // Only animate genuinely new cards
+                    setTimeout(() => {
+                        cardElement.classList.add('dealing');
+                        container.appendChild(cardElement);
+                    }, (index - prevCount) * 200);
+                } else {
                     container.appendChild(cardElement);
-                }, index * 200);
+                }
             });
-
-            // Add placeholder cards for incomplete board
-            for (let i = cards.length; i < 5; i++) {
-                const placeholder = createCardElement(null, true);
-                container.appendChild(placeholder);
-            }
         }
 
         // Update players display
@@ -2317,7 +2390,7 @@
                 
                 // Reset seat content
                 seat.querySelector('.player-avatar').style.display = 'none';
-                seat.querySelector('.player-name').textContent = '—';
+                seat.querySelector('.player-name').textContent = 'Sit Here';
                 seat.querySelector('.player-stack').style.display = 'none';
                 seat.querySelector('.player-bet').style.display = 'none';
                 seat.querySelector('.player-status').style.display = 'none';
@@ -2378,9 +2451,9 @@
                     betElement.style.display = 'none';
                 }
 
-                // Update status
+                // Update status (hide for 'active' and 'waiting' — only show meaningful states)
                 const statusElement = seat.querySelector('.player-status');
-                if (player.status && player.status !== 'active') {
+                if (player.status && player.status !== 'active' && player.status !== 'waiting') {
                     statusElement.style.display = 'block';
                     statusElement.textContent = player.status.toUpperCase();
                     if (player.status === 'folded') {
@@ -2477,8 +2550,12 @@
             }
         }
 
-        // Update player's hole cards
+        // Update player's hole cards (skip if unchanged)
         function updatePlayerCards(cards) {
+            const key = JSON.stringify(cards);
+            if (key === _lastHoleKey) return; // unchanged — skip
+            _lastHoleKey = key;
+
             const container = document.getElementById('playerCards');
             container.innerHTML = '';
             
