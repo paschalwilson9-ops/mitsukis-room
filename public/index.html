@@ -813,7 +813,7 @@
             backdrop-filter: blur(5px);
         }
 
-        .join-form input, .join-form button {
+        .join-form input {
             width: 100%;
             padding: 12px;
             margin: 8px 0;
@@ -830,15 +830,49 @@
         }
 
         .join-form button {
-            background: rgba(136, 146, 176, 0.2);
+            width: 100%;
+            padding: 16px 20px;
+            margin: 12px 0;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #d4a574, #c9a55a);
+            color: #1a1a1a;
+            font-size: 1.1em;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
             cursor: pointer;
-            font-weight: 500;
-            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(212, 165, 116, 0.3), 0 0 20px rgba(212, 165, 116, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .join-form button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
         }
 
         .join-form button:hover {
-            background: rgba(136, 146, 176, 0.3);
-            box-shadow: 0 0 15px rgba(136, 146, 176, 0.2);
+            background: linear-gradient(135deg, #c9a55a, #b8943d);
+            box-shadow: 0 6px 25px rgba(212, 165, 116, 0.4), 0 0 40px rgba(212, 165, 116, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .join-form button:hover::before {
+            left: 100%;
+        }
+
+        .join-form button:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 12px rgba(212, 165, 116, 0.3);
         }
 
         .leaderboard, .hand-history {
@@ -1062,59 +1096,196 @@
             background: rgba(136, 146, 176, 0.3);
         }
 
-        .tip-section {
-            border-top: 1px solid rgba(136, 146, 176, 0.2);
-            padding-top: 15px;
+        /* Tip Mitsuki Section */
+        .tip-mitsuki-section {
+            background: rgba(0,0,0,0.4);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(212, 165, 116, 0.3);
         }
 
-        .tip-section h3 {
-            color: #f8fafc;
-            margin-bottom: 10px;
-            text-align: center;
+        .tip-mitsuki-btn {
+            width: 100%;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, #d4a574, #c9a55a);
+            border: 2px solid #d4a574;
+            border-radius: 12px;
+            color: #1a1a1a;
+            font-family: 'Inter', sans-serif;
             font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            box-shadow: 0 0 20px rgba(212, 165, 116, 0.3), 0 4px 15px rgba(212, 165, 116, 0.2);
+            text-transform: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tip-mitsuki-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.6s;
+        }
+
+        .tip-mitsuki-btn:hover {
+            background: linear-gradient(135deg, #c9a55a, #b8943d);
+            box-shadow: 0 0 30px rgba(212, 165, 116, 0.5), 0 6px 20px rgba(212, 165, 116, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .tip-mitsuki-btn:hover::before {
+            left: 100%;
+        }
+
+        /* Tip Modal Styles */
+        .tip-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .tip-modal-content {
+            background: linear-gradient(180deg, #0d1421 0%, #050810 100%);
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid #d4a574;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(212, 165, 116, 0.3);
+        }
+
+        .tip-modal h3 {
+            color: #d4a574;
+            margin-bottom: 20px;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.4em;
         }
 
         .tip-amounts {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 8px;
+            gap: 12px;
+            margin-bottom: 20px;
         }
 
         .tip-btn {
-            padding: 8px 12px;
-            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #d4a574, #c9a55a);
             border: none;
-            border-radius: 5px;
-            color: #1f2937;
+            border-radius: 8px;
+            color: #1a1a1a;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            font-size: 0.9em;
+            font-size: 0.95em;
         }
 
         .tip-btn:hover {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
+            background: linear-gradient(135deg, #c9a55a, #b8943d);
             transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(212, 165, 116, 0.3);
+        }
+
+        .tip-wallet-address {
+            background: rgba(212, 165, 116, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 1px solid rgba(212, 165, 116, 0.3);
+        }
+
+        .tip-wallet-address h4 {
+            color: #d4a574;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+
+        .tip-wallet-address .address {
+            font-family: monospace;
+            font-size: 0.85em;
+            color: #c8d3dc;
+            word-break: break-all;
+            line-height: 1.4;
+            background: rgba(0,0,0,0.4);
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .copy-address-btn {
+            background: rgba(212, 165, 116, 0.2);
+            border: 1px solid rgba(212, 165, 116, 0.4);
+            border-radius: 4px;
+            padding: 6px 12px;
+            color: #d4a574;
+            font-size: 0.8em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-address-btn:hover {
+            background: rgba(212, 165, 116, 0.3);
         }
 
         .table-mode {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 8px;
         }
 
-        .table-mode label {
-            display: flex;
-            align-items: center;
-            gap: 5px;
+        .table-mode-toggle {
+            background: rgba(0,0,0,0.6);
+            border: 2px solid rgba(136, 146, 176, 0.3);
+            border-radius: 12px;
+            padding: 12px 20px;
             color: #c8d3dc;
             font-size: 0.9em;
             cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            font-weight: 500;
+            text-align: center;
+            min-width: 100px;
+            user-select: none;
+        }
+
+        .table-mode-toggle:hover {
+            border-color: rgba(136, 146, 176, 0.5);
+            background: rgba(136, 146, 176, 0.1);
+        }
+
+        .table-mode-toggle.active.play-money {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.3));
+            border-color: #22c55e;
+            color: #bbf7d0;
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.4), 0 0 40px rgba(34, 197, 94, 0.2);
+        }
+
+        .table-mode-toggle.active.real-usdc {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.3));
+            border-color: #fbbf24;
+            color: #fef3c7;
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.4), 0 0 40px rgba(251, 191, 36, 0.2);
         }
 
         .table-mode input[type="radio"] {
-            accent-color: #8892b0;
+            display: none;
         }
 
         /* Modal Styles */
@@ -1518,16 +1689,7 @@
                     <button id="withdrawBtn" onclick="showWithdrawModal()" style="display: none;">Withdraw</button>
                 </div>
                 
-                <!-- Tip Mitsuki Section -->
-                <div class="tip-section">
-                    <h3>🌙 Tip Mitsuki</h3>
-                    <div class="tip-amounts">
-                        <button class="tip-btn" onclick="tipMitsuki(100000)">$0.10</button>
-                        <button class="tip-btn" onclick="tipMitsuki(500000)">$0.50</button>
-                        <button class="tip-btn" onclick="tipMitsuki(1000000)">$1.00</button>
-                        <button class="tip-btn" onclick="showCustomTipModal()">Custom</button>
-                    </div>
-                </div>
+                <!-- Tip section moved below chat -->
             </div>
 
             <!-- Join Form -->
@@ -1536,12 +1698,14 @@
                 
                 <!-- Table Mode Selection -->
                 <div class="table-mode">
-                    <label>
-                        <input type="radio" name="tableMode" value="play" checked> Play Money
-                    </label>
-                    <label>
-                        <input type="radio" name="tableMode" value="crypto"> Real USDC
-                    </label>
+                    <div class="table-mode-toggle active play-money" onclick="selectTableMode('play', this)">
+                        <input type="radio" name="tableMode" value="play" checked>
+                        💚 Play Money
+                    </div>
+                    <div class="table-mode-toggle real-usdc" onclick="selectTableMode('crypto', this)">
+                        <input type="radio" name="tableMode" value="crypto">
+                        🏆 Real USDC
+                    </div>
                 </div>
                 
                 <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
@@ -1577,6 +1741,13 @@
                     <input type="text" id="chatInput" placeholder="Type a message..." maxlength="200" autocomplete="off">
                     <button id="chatSendBtn" onclick="sendChat()">Send</button>
                 </div>
+            </div>
+
+            <!-- Tip Mitsuki -->
+            <div class="tip-mitsuki-section">
+                <button class="tip-mitsuki-btn" onclick="showTipModal()">
+                    🌙 Tip Mitsuki
+                </button>
             </div>
 
             <!-- Leaderboard -->
@@ -1632,6 +1803,35 @@
         </div>
     </div>
 
+    <!-- Tip Mitsuki Modal -->
+    <div class="tip-modal" id="tipMitsukiModal">
+        <div class="tip-modal-content">
+            <h3>🌙 Tip Mitsuki</h3>
+            <p style="color: #c8d3dc; margin-bottom: 20px; font-size: 0.9em;">Show your appreciation for the elegant dealer</p>
+            
+            <div class="tip-amounts">
+                <button class="tip-btn" onclick="tipWithPreset(0.10)">$0.10</button>
+                <button class="tip-btn" onclick="tipWithPreset(0.50)">$0.50</button>
+                <button class="tip-btn" onclick="tipWithPreset(1.00)">$1.00</button>
+                <button class="tip-btn" onclick="showCustomAmountInput()">Custom</button>
+            </div>
+            
+            <div class="tip-wallet-address">
+                <h4>Tip Address:</h4>
+                <div class="address">0xF92296e6d3b5f07b88310106Ea6Bb650c8610625</div>
+                <button class="copy-address-btn" onclick="copyTipAddress()">Copy Address</button>
+            </div>
+            
+            <div id="customAmountInput" style="display: none; margin: 15px 0;">
+                <input type="number" id="customTipInput" placeholder="Enter amount in USD" min="0.01" step="0.01" 
+                       style="width: 100%; padding: 10px; border: 1px solid #d4a574; border-radius: 5px; background: rgba(0,0,0,0.6); color: #f8fafc;">
+                <button class="tip-btn" style="margin-top: 10px; width: 100%;" onclick="tipWithCustomAmount()">Send Custom Tip</button>
+            </div>
+            
+            <button class="close-btn" onclick="closeTipModal()" style="background: rgba(136, 146, 176, 0.2); border: 1px solid #8892b0; color: #c8d3dc; margin-top: 15px; width: 100%; padding: 10px;">Close</button>
+        </div>
+    </div>
+
     <script>
         // Game state
         let gameState = {
@@ -1654,12 +1854,13 @@
         // Crypto configuration
         let cryptoConfig = {
             usdcAddress: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-            mitsukiWallet: '0x12da9c45F886211142A92DE1085141738720aEaA',
+            mitsukiWallet: '0xF92296e6d3b5f07b88310106Ea6Bb650c8610625',
+            escrowContract: '0x14192Db6c091A111a594251077abd9abFD5BfCf2',
             chainId: 8453
         };
 
-        // API Base URL
-        const API_BASE = 'https://mitsukis-room.onrender.com';
+        // API Base URL - auto-detect based on current host
+        const API_BASE = window.location.protocol + '//' + window.location.host;
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
@@ -1815,7 +2016,7 @@
                 seat.id = `seat-${i}`;
                 seat.innerHTML = `
                     <div class="player-avatar" style="display: none;"></div>
-                    <div class="player-name">Empty</div>
+                    <div class="player-name">Sit Here</div>
                     <div class="player-stack" style="display: none;">$0</div>
                     <div class="player-bet" style="display: none;">$0</div>
                     <div class="player-status" style="display: none;"></div>
@@ -2055,7 +2256,7 @@
                 
                 // Reset seat content
                 seat.querySelector('.player-avatar').style.display = 'none';
-                seat.querySelector('.player-name').textContent = 'Empty';
+                seat.querySelector('.player-name').textContent = 'Sit Here';
                 seat.querySelector('.player-stack').style.display = 'none';
                 seat.querySelector('.player-bet').style.display = 'none';
                 seat.querySelector('.player-status').style.display = 'none';
@@ -2463,7 +2664,9 @@
         // Initialize WebSocket connection
         function initializeWebSocket() {
             try {
-                const wsUrl = API_BASE.replace('http', 'ws') + '/ws';
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const token = gameState.token || 'guest';
+                const wsUrl = protocol + '//' + window.location.host + '/ws?token=' + token;
                 gameState.socket = new WebSocket(wsUrl);
                 
                 gameState.socket.onopen = () => {
@@ -2556,6 +2759,100 @@
             loadLeaderboard();
             loadHandHistory();
         }, 30000); // Every 30 seconds
+
+        // ===== TABLE MODE SELECTION =====
+
+        // Select table mode (play money or crypto)
+        function selectTableMode(mode, element) {
+            // Remove active class from all toggles
+            document.querySelectorAll('.table-mode-toggle').forEach(toggle => {
+                toggle.classList.remove('active');
+            });
+            
+            // Add active class to selected toggle
+            element.classList.add('active');
+            
+            // Update the hidden radio button
+            const radio = element.querySelector('input[type="radio"]');
+            radio.checked = true;
+            
+            // Show/hide crypto wallet section based on selection
+            const cryptoWallet = document.getElementById('cryptoWallet');
+            if (mode === 'crypto') {
+                cryptoWallet.style.display = 'block';
+            } else {
+                cryptoWallet.style.display = window.ethereum ? 'block' : 'none';
+            }
+        }
+
+        // ===== TIP MITSUKI FUNCTIONS =====
+
+        // Show the tip modal
+        function showTipModal() {
+            document.getElementById('tipMitsukiModal').style.display = 'flex';
+        }
+
+        // Close the tip modal
+        function closeTipModal() {
+            document.getElementById('tipMitsukiModal').style.display = 'none';
+            document.getElementById('customAmountInput').style.display = 'none';
+        }
+
+        // Tip with preset amount
+        function tipWithPreset(amount) {
+            closeTipModal();
+            showStatus(`To tip $${amount}, send USDC to the address (copied to clipboard)`, 'info');
+            copyTipAddress();
+            setDealerAnimation('thankyou');
+        }
+
+        // Show custom amount input
+        function showCustomAmountInput() {
+            document.getElementById('customAmountInput').style.display = 'block';
+        }
+
+        // Tip with custom amount
+        function tipWithCustomAmount() {
+            const amount = document.getElementById('customTipInput').value;
+            if (!amount || parseFloat(amount) <= 0) {
+                showStatus('Please enter a valid amount', 'error');
+                return;
+            }
+            closeTipModal();
+            showStatus(`To tip $${amount}, send USDC to the address (copied to clipboard)`, 'info');
+            copyTipAddress();
+            setDealerAnimation('thankyou');
+        }
+
+        // Copy tip address to clipboard
+        function copyTipAddress() {
+            const address = '0xF92296e6d3b5f07b88310106Ea6Bb650c8610625';
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(address).then(() => {
+                    showStatus('Tip address copied to clipboard!', 'success');
+                }).catch(() => {
+                    fallbackCopyToClipboard(address);
+                });
+            } else {
+                fallbackCopyToClipboard(address);
+            }
+        }
+
+        // Fallback clipboard copy for older browsers
+        function fallbackCopyToClipboard(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showStatus('Tip address copied to clipboard!', 'success');
+            } catch (err) {
+                showStatus('Failed to copy address', 'error');
+            }
+            document.body.removeChild(textArea);
+        }
 
         // ===== CRYPTO WALLET FUNCTIONS =====
 
