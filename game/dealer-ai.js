@@ -73,6 +73,20 @@ const FALLBACK_QUIPS = {
     "Another dance begins.",
     "Hope springs eternal in poker."
   ],
+  bombPot: [
+    "Chaos unleashed. Everyone's in.",
+    "💣 No escape now. The ante is paid.",
+    "Explosive poker. Let the madness begin.",
+    "Everyone pays the price of war.",
+    "The bomb has dropped. Survival mode activated."
+  ],
+  runItTwice: [
+    "Two chances at fate. Twice the drama.",
+    "Destiny splits in two. Choose wisely.",
+    "The universe hedges its bets.",
+    "Running it twice. Even fate gets nervous.",
+    "Two boards, two chances, one pot."
+  ],
   community: [
     "The flop reveals its secrets.",
     "The turn adds complexity.",
@@ -328,6 +342,12 @@ class DealerAI {
       case 'turn':
       case 'river':
         pool = FALLBACK_QUIPS.community;
+        break;
+      case 'bombPot':
+        pool = FALLBACK_QUIPS.bombPot;
+        break;
+      case 'runItTwice':
+        pool = FALLBACK_QUIPS.runItTwice;
         break;
       default:
         pool = FALLBACK_QUIPS.fold;

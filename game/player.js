@@ -31,6 +31,24 @@ class Player {
     this.elo = config.DEFAULT_ELO;
     this.handsPlayed = 0;
     this.handsWon = 0;
+    
+    // Enhanced Stats for Display
+    this.sessionStats = {
+      hands: 0,
+      vpip: 0,      // Voluntarily put money in pot
+      pfr: 0,       // Pre-flop raise
+      aggression: 0, // Aggression factor
+      folds: 0,
+      checks: 0,
+      calls: 0,
+      raises: 0,
+      bets: 0,
+      preflop: {
+        hands: 0,
+        voluntary: 0,  // VPIP numerator 
+        raises: 0      // PFR numerator
+      }
+    };
   }
 
   /** Reset for a new hand */
@@ -119,6 +137,12 @@ class Player {
       sitOut: this.sitOut,
       timeBank: this.timeBank,
       usingTimeBank: this.usingTimeBank,
+      stats: {
+        hands: this.sessionStats.hands,
+        vpip: this.getVPIP(),
+        pfr: this.getPFR(),
+        af: this.getAF()
+      }
     };
   }
 
@@ -130,6 +154,67 @@ class Player {
       token: this.id,
       elo: this.elo,
     };
+  }
+
+  /** Calculate VPIP (Voluntarily Put money In Pot) percentage */
+  getVPIP() {
+    if (this.sessionStats.preflop.hands === 0) return 0;
+    return Math.round((this.sessionStats.preflop.voluntary / this.sessionStats.preflop.hands) * 100);
+  }
+
+  /** Calculate PFR (Pre-Flop Raise) percentage */
+  getPFR() {
+    if (this.sessionStats.preflop.hands === 0) return 0;
+    return Math.round((this.sessionStats.preflop.raises / this.sessionStats.preflop.hands) * 100);
+  }
+
+  /** Calculate Aggression Factor */
+  getAF() {
+    if (this.sessionStats.calls === 0) return 0;
+    const aggressive = this.sessionStats.raises + this.sessionStats.bets;
+    return (aggressive / this.sessionStats.calls).toFixed(1);
+  }
+
+  /** Update session stats for an action */
+  updateSessionStats(action, phase = 'postflop', voluntary = false) {
+    const stats = this.sessionStats;
+    
+    switch (action) {
+      case 'newHand':
+        stats.hands++;
+        stats.preflop.hands++;
+        break;
+      case 'fold':
+        stats.folds++;
+        break;
+      case 'check':
+        stats.checks++;
+        break;
+      case 'call':
+        stats.calls++;
+        if (phase === 'preflop' && voluntary) {
+          stats.preflop.voluntary++;
+        }
+        break;
+      case 'raise':
+        stats.raises++;
+        if (phase === 'preflop') {
+          stats.preflop.voluntary++;
+          stats.preflop.raises++;
+        }
+        break;
+      case 'bet':
+        stats.bets++;
+        if (phase === 'preflop') {
+          stats.preflop.voluntary++;
+        }
+        break;
+    }
+    
+    // Recalculate derived stats
+    stats.vpip = this.getVPIP();
+    stats.pfr = this.getPFR();
+    stats.aggression = this.getAF();
   }
 }
 

@@ -49,6 +49,26 @@ class Table {
     this.playerStats = {};       // { name: { hands: 0, folds: 0, raises: 0, calls: 0, wins: 0, allIns: 0 } }
     this.recentActions = [];     // Track recent actions for AI context
 
+    // Polish Features
+    this.bombPotVoting = {
+      active: false,
+      votes: new Map(),     // playerId -> boolean
+      proposedBy: null,
+      timer: null
+    };
+    this.nextHandBombPot = false;
+    this.runItTwice = {
+      active: false,
+      votes: new Map(),     // playerId -> boolean 
+      timer: null,
+      eligiblePlayers: []
+    };
+    this.multipleBoards = [];    // For run it twice - store both board results
+    
+    // Enhanced Chat
+    this.chatMessages = [];      // Store chat history with reactions
+    this.lastChatId = 0;
+
     // Broadcast function (set by server)
     this.broadcast = () => {};
 
@@ -235,6 +255,278 @@ class Table {
     }
   }
 
+  // ─── Bomb Pot Management ──────────────────────────────────────
+
+  /** Start bomb pot voting */
+  proposeBombPot(playerId) {
+    const player = this.findPlayer(playerId);
+    if (!player || this.bombPotVoting.active || this.phase !== 'waiting') {
+      return { error: 'Cannot propose bomb pot right now' };
+    }
+
+    const activePlayers = this.seatedPlayers().filter(p => !p.sitOut && p.stack > 0);
+    if (activePlayers.length < 2) {
+      return { error: 'Need at least 2 players for bomb pot' };
+    }
+
+    this.bombPotVoting.active = true;
+    this.bombPotVoting.proposedBy = playerId;
+    this.bombPotVoting.votes.clear();
+
+    this.mitsuki(`${player.name} proposes a bomb pot! Everyone antes ${this.bigBlind * config.BOMB_POTS.ante}. Vote now! 💣`);
+    
+    this.broadcast({
+      type: 'bomb_pot_vote',
+      proposedBy: player.name,
+      ante: this.bigBlind * config.BOMB_POTS.ante,
+      timeLeft: config.BOMB_POTS.voteTimeMs / 1000
+    });
+
+    // Set voting timer
+    this.bombPotVoting.timer = setTimeout(() => {
+      this.finalizeBombPotVote();
+    }, config.BOMB_POTS.voteTimeMs);
+
+    return { success: true };
+  }
+
+  /** Vote on bomb pot */
+  voteBombPot(playerId, vote) {
+    if (!this.bombPotVoting.active) {
+      return { error: 'No bomb pot vote active' };
+    }
+
+    const player = this.findPlayer(playerId);
+    if (!player || player.sitOut || player.stack === 0) {
+      return { error: 'Cannot vote' };
+    }
+
+    this.bombPotVoting.votes.set(playerId, vote);
+    
+    this.broadcast({
+      type: 'bomb_pot_vote_update',
+      voter: player.name,
+      vote: vote,
+      totalVotes: this.bombPotVoting.votes.size
+    });
+
+    return { success: true };
+  }
+
+  /** Finalize bomb pot voting */
+  finalizeBombPotVote() {
+    if (!this.bombPotVoting.active) return;
+
+    const activePlayers = this.seatedPlayers().filter(p => !p.sitOut && p.stack > 0);
+    const requiredVotes = Math.max(2, Math.ceil(activePlayers.length / 2));
+    const yesVotes = Array.from(this.bombPotVoting.votes.values()).filter(v => v === true).length;
+
+    this.bombPotVoting.active = false;
+    if (this.bombPotVoting.timer) {
+      clearTimeout(this.bombPotVoting.timer);
+      this.bombPotVoting.timer = null;
+    }
+
+    if (yesVotes >= requiredVotes) {
+      this.nextHandBombPot = true;
+      this.mitsuki('Bomb pot approved! Next hand will be explosive. 💣');
+    } else {
+      this.mitsuki('Bomb pot rejected. Regular hand it is.');
+    }
+
+    this.broadcast({
+      type: 'bomb_pot_result',
+      approved: this.nextHandBombPot,
+      yesVotes,
+      requiredVotes
+    });
+
+    this.bombPotVoting.votes.clear();
+  }
+
+  // ─── Run It Twice Management ──────────────────────────────────
+
+  /** Check if run it twice is eligible */
+  checkRunItTwiceEligible() {
+    const allInPlayers = this.activePlayers().filter(p => p.status === 'all-in');
+    const activePlayers = this.actingPlayers();
+    
+    return (
+      config.RUN_IT_TWICE.enabled && 
+      allInPlayers.length >= 1 && 
+      activePlayers.length <= 1 &&
+      this.activePlayers().length === 2 // Only heads-up for now
+    );
+  }
+
+  /** Prompt for run it twice */
+  promptRunItTwice() {
+    if (!this.checkRunItTwiceEligible()) return;
+
+    const eligible = this.activePlayers();
+    this.runItTwice.active = true;
+    this.runItTwice.votes.clear();
+    this.runItTwice.eligiblePlayers = eligible.map(p => p.id);
+
+    this.mitsuki('All-in detected. Run it twice? Both players must agree. ⚡');
+    
+    this.broadcast({
+      type: 'run_it_twice_prompt',
+      timeLeft: config.RUN_IT_TWICE.promptTimeMs / 1000
+    });
+
+    this.runItTwice.timer = setTimeout(() => {
+      this.finalizeRunItTwice();
+    }, config.RUN_IT_TWICE.promptTimeMs);
+  }
+
+  /** Vote on run it twice */
+  voteRunItTwice(playerId, vote) {
+    if (!this.runItTwice.active) {
+      return { error: 'No run it twice vote active' };
+    }
+
+    if (!this.runItTwice.eligiblePlayers.includes(playerId)) {
+      return { error: 'You are not eligible to vote' };
+    }
+
+    this.runItTwice.votes.set(playerId, vote);
+    
+    const player = this.findPlayer(playerId);
+    this.broadcast({
+      type: 'run_it_twice_vote',
+      voter: player ? player.name : 'Unknown',
+      vote: vote
+    });
+
+    // If all eligible players voted, finalize immediately
+    if (this.runItTwice.votes.size === this.runItTwice.eligiblePlayers.length) {
+      this.finalizeRunItTwice();
+    }
+
+    return { success: true };
+  }
+
+  /** Finalize run it twice voting */
+  finalizeRunItTwice() {
+    if (!this.runItTwice.active) return;
+
+    this.runItTwice.active = false;
+    if (this.runItTwice.timer) {
+      clearTimeout(this.runItTwice.timer);
+      this.runItTwice.timer = null;
+    }
+
+    const votes = Array.from(this.runItTwice.votes.values());
+    const runTwice = votes.length === this.runItTwice.eligiblePlayers.length && votes.every(v => v === true);
+
+    if (runTwice) {
+      this.mitsuki('Running it twice. Fate gets two chances. 🌙');
+      this.runMultipleBoards();
+    } else {
+      this.mitsuki('Running it once. Single fate.');
+      this.runOutBoard();
+    }
+  }
+
+  /** Run multiple boards (run it twice) */
+  runMultipleBoards() {
+    const remainingCards = 5 - this.communityCards.length;
+    this.multipleBoards = [];
+
+    // Create two separate board runouts
+    for (let board = 0; board < 2; board++) {
+      const deck = new (require('./deck')).Deck();
+      deck.shuffle();
+      
+      // Remove already dealt cards
+      const usedCards = [...this.communityCards];
+      for (const player of this.activePlayers()) {
+        usedCards.push(...player.holeCards);
+      }
+
+      // Deal remaining community cards for this board
+      const boardCards = [...this.communityCards];
+      for (let i = 0; i < remainingCards; i++) {
+        deck.burn();
+        const newCards = deck.deal(1);
+        boardCards.push(...newCards);
+      }
+
+      this.multipleBoards.push(boardCards);
+    }
+
+    // Show both boards
+    this.broadcast({
+      type: 'run_it_twice_boards',
+      board1: this.multipleBoards[0],
+      board2: this.multipleBoards[1]
+    });
+
+    // Evaluate both boards separately
+    setTimeout(() => {
+      this.showdownMultipleBoards();
+    }, 3000);
+  }
+
+  /** Showdown with multiple boards */
+  showdownMultipleBoards() {
+    const contenders = this.activePlayers();
+    if (contenders.length === 0) return;
+
+    const totalPot = this.pot;
+    const potPerBoard = Math.floor(totalPot / 2);
+    const remainder = totalPot - (potPerBoard * 2);
+
+    const results = [];
+
+    // Evaluate each board
+    this.multipleBoards.forEach((board, boardIndex) => {
+      const playerHands = contenders.map(p => ({
+        player: p,
+        hand: (require('./hand-eval')).evaluateHand([...p.holeCards, ...board]),
+        seat: p.seat
+      }));
+
+      const winners = (require('./hand-eval')).determineWinners(playerHands);
+      const winnerShare = Math.floor(potPerBoard / winners.length);
+
+      // Award pot for this board
+      winners.forEach(winner => {
+        winner.player.award(winnerShare);
+        results.push({
+          board: boardIndex + 1,
+          winner: winner.player.name,
+          hand: winner.hand.name,
+          amount: winnerShare
+        });
+
+        this.mitsuki(`Board ${boardIndex + 1}: ${winner.player.name} wins $${winnerShare} with ${winner.hand.name}!`);
+        this.updatePlayerStats(winner.player.name, 'win');
+      });
+    });
+
+    // Award remainder to first winner of first board
+    if (remainder > 0 && results.length > 0) {
+      const firstWinner = contenders.find(p => p.name === results[0].winner);
+      if (firstWinner) {
+        firstWinner.award(remainder);
+        this.mitsuki(`${firstWinner.name} receives the odd chips ($${remainder}).`);
+      }
+    }
+
+    this.broadcast({
+      type: 'run_it_twice_results',
+      results: results,
+      boards: this.multipleBoards
+    });
+
+    this.pot = 0;
+    this.pots = [];
+    this.multipleBoards = [];
+    this.scheduleNextHand();
+  }
+
   // ─── Hand Management ──────────────────────────────────────────
 
   /** Start a new hand */
@@ -262,6 +554,7 @@ class Table {
     // Update hand count stats for all players
     for (const p of eligible) {
       this.updatePlayerStats(p.name, 'newHand');
+      p.updateSessionStats('newHand');
     }
 
     // Reset players
@@ -274,16 +567,53 @@ class Table {
 
     // Shuffle and deal
     this.deck.reset().shuffle();
-    this.mitsuki(`🌙 Hand #${this.handNumber} — Mitsuki shuffles the deck...`);
+    
+    // Check if this is a bomb pot
+    if (this.nextHandBombPot) {
+      this.mitsuki(`🌙 Hand #${this.handNumber} — BOMB POT! Everyone's in. Let chaos reign. 💣`);
+      this.runBombPot();
+    } else {
+      this.mitsuki(`🌙 Hand #${this.handNumber} — Mitsuki shuffles the deck...`);
+      
+      // Post blinds
+      this.postBlinds();
 
-    // Post blinds
-    this.postBlinds();
+      // Deal hole cards
+      this.dealHoleCards();
+
+      // Start preflop betting
+      this.phase = 'preflop';
+      this.startBettingRound();
+    }
+  }
+
+  /** Run bomb pot hand */
+  runBombPot() {
+    this.nextHandBombPot = false;
+    const anteAmount = this.bigBlind * config.BOMB_POTS.ante;
+    
+    // Everyone antes
+    for (const p of this.activePlayers()) {
+      const ante = p.bet(Math.min(anteAmount, p.stack));
+      this.pot += ante;
+      p.lastAction = 'ante';
+      this.mitsuki(`${p.name} antes ${ante}`);
+    }
 
     // Deal hole cards
     this.dealHoleCards();
 
-    // Start preflop betting
-    this.phase = 'preflop';
+    // Skip preflop, go straight to flop
+    this.phase = 'flop';
+    this.dealFlop();
+    
+    this.broadcast({
+      type: 'bomb_pot_started',
+      ante: anteAmount,
+      pot: this.pot
+    });
+
+    // Start betting on the flop
     this.startBettingRound();
   }
 
@@ -548,6 +878,7 @@ class Table {
         player.status = 'folded';
         player.lastAction = 'fold';
         this.updatePlayerStats(player.name, 'fold');
+        player.updateSessionStats('fold', this.phase);
         this.dealerComment({ event: 'fold', player: player.name });
         break;
 
@@ -555,6 +886,7 @@ class Table {
         if (toCall > 0) return { error: 'Cannot check — there is a bet to you' };
         player.lastAction = 'check';
         this.updatePlayerStats(player.name, 'check');
+        player.updateSessionStats('check', this.phase);
         this.dealerComment({ event: 'check', player: player.name });
         break;
 
@@ -563,8 +895,10 @@ class Table {
         this.pot += callAmount;
         player.lastAction = 'call';
         const isAllIn = player.status === 'all-in';
+        const voluntary = this.phase === 'preflop' && toCall > this.bigBlind;
         
         this.updatePlayerStats(player.name, 'call', isAllIn);
+        player.updateSessionStats('call', this.phase, voluntary);
         this.dealerComment({ 
           event: 'call', 
           player: player.name, 
@@ -636,6 +970,7 @@ class Table {
           this._lastRaiserSeat = player.seat;
           player.lastAction = 'raise';
           this.updatePlayerStats(player.name, 'raise');
+          player.updateSessionStats('raise', this.phase, true);
           this.dealerComment({ 
             event: 'raise', 
             player: player.name,
@@ -686,6 +1021,11 @@ class Table {
           this.promptCurrentPlayer();
           return;
         }
+      }
+      // Check for run it twice opportunity
+      if (this.checkRunItTwiceEligible()) {
+        this.promptRunItTwice();
+        return;
       }
       // All bets settled — deal remaining community cards and go to showdown
       this.runOutBoard();
@@ -1186,6 +1526,109 @@ class Table {
         ph.player.elo += Math.round(config.ELO_K_FACTOR * (actual - expected));
       }
     }
+  }
+
+  // ─── Enhanced Chat ────────────────────────────────────────────
+
+  /** Add a chat message */
+  addChatMessage(sender, text, senderId = null) {
+    const timestamp = Date.now();
+    this.lastChatId++;
+    
+    // Check for /tip command
+    if (text.startsWith('/tip')) {
+      if (senderId) {
+        this.broadcast({
+          type: 'show_tip_modal',
+          playerId: senderId,
+          playerName: sender
+        });
+        return this.lastChatId;
+      }
+    }
+
+    const message = {
+      id: this.lastChatId,
+      sender,
+      senderId,
+      text,
+      timestamp,
+      reactions: new Map() // emoji -> Set<playerId>
+    };
+
+    this.chatMessages.push(message);
+
+    // Keep only last 50 messages
+    if (this.chatMessages.length > 50) {
+      this.chatMessages.shift();
+    }
+
+    // Broadcast with special styling for Mitsuki
+    this.broadcast({
+      type: 'chat_message',
+      message: {
+        ...message,
+        reactions: Object.fromEntries(message.reactions),
+        isMitsuki: sender === 'Mitsuki',
+        timestamp: this.formatTime(timestamp)
+      }
+    });
+
+    return this.lastChatId;
+  }
+
+  /** Add reaction to a chat message */
+  addReaction(messageId, emoji, playerId) {
+    const message = this.chatMessages.find(m => m.id === messageId);
+    if (!message) return { error: 'Message not found' };
+
+    if (!message.reactions.has(emoji)) {
+      message.reactions.set(emoji, new Set());
+    }
+
+    const emojiReactions = message.reactions.get(emoji);
+    if (emojiReactions.has(playerId)) {
+      emojiReactions.delete(playerId); // Toggle off
+    } else {
+      emojiReactions.add(playerId); // Toggle on
+    }
+
+    // Remove emoji if no reactions left
+    if (emojiReactions.size === 0) {
+      message.reactions.delete(emoji);
+    }
+
+    this.broadcast({
+      type: 'chat_reaction_update',
+      messageId,
+      emoji,
+      reactions: Object.fromEntries(
+        Array.from(message.reactions.entries()).map(([e, playerSet]) => [e, Array.from(playerSet)])
+      )
+    });
+
+    return { success: true };
+  }
+
+  /** Format timestamp for display */
+  formatTime(timestamp) {
+    return new Date(timestamp).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  }
+
+  /** Enhanced Mitsuki with special chat styling */
+  mitsuki(msg) {
+    const entry = { ts: Date.now(), msg };
+    this.currentHandLog.push(entry);
+    console.log(`[Table ${this.id.slice(0, 6)}] ${msg}`);
+    
+    // Add to chat as special Mitsuki message
+    this.addChatMessage('Mitsuki', msg, 'dealer');
+    
+    this.broadcast({ type: 'mitsuki', message: msg });
   }
 
   // ─── State ────────────────────────────────────────────────────

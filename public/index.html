@@ -561,6 +561,28 @@
             font-weight: 500;
         }
 
+        .player-stats {
+            font-size: 0.6em;
+            color: #8892b0;
+            margin-top: 2px;
+            line-height: 1.1;
+            text-align: center;
+        }
+
+        .player-stats-tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.9);
+            color: #c8d3dc;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.75em;
+            white-space: nowrap;
+            z-index: 100;
+            pointer-events: none;
+            border: 1px solid #8892b0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
         /* Dealer Button */
         .dealer-button {
             position: absolute;
@@ -1637,6 +1659,75 @@
             font-size: 0.8em;
         }
 
+        .chat-entry.mitsuki {
+            background: linear-gradient(135deg, rgba(212, 169, 55, 0.1), rgba(201, 165, 90, 0.1));
+            border-left: 3px solid #d4a937;
+            border-radius: 6px;
+            color: #fef3c7;
+        }
+
+        .chat-timestamp {
+            font-size: 0.7em;
+            color: #6b7280;
+            margin-left: 8px;
+        }
+
+        .chat-reactions {
+            display: flex;
+            gap: 4px;
+            margin-top: 4px;
+            flex-wrap: wrap;
+        }
+
+        .chat-reaction {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(136, 146, 176, 0.1);
+            border: 1px solid rgba(136, 146, 176, 0.2);
+            border-radius: 12px;
+            padding: 2px 6px;
+            font-size: 0.7em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chat-reaction:hover {
+            background: rgba(136, 146, 176, 0.2);
+            border-color: rgba(136, 146, 176, 0.4);
+        }
+
+        .chat-reaction.active {
+            background: rgba(96, 165, 250, 0.2);
+            border-color: #60a5fa;
+        }
+
+        .reaction-controls {
+            display: inline-flex;
+            gap: 2px;
+            margin-left: 8px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .chat-entry:hover .reaction-controls {
+            opacity: 1;
+        }
+
+        .reaction-btn {
+            background: transparent;
+            border: 1px solid rgba(136, 146, 176, 0.3);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 0.8em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .reaction-btn:hover {
+            background: rgba(136, 146, 176, 0.1);
+            border-color: rgba(136, 146, 176, 0.5);
+        }
+
         .chat-input-area {
             display: flex;
             gap: 8px;
@@ -2108,6 +2199,13 @@
                             I'm Back
                         </button>
                     </div>
+
+                    <!-- Bomb Pot Button -->
+                    <div id="bombPotSection" style="display: none;">
+                        <button id="bombPotBtn" onclick="proposeBombPot()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #dc2626, #991b1b); border: none; border-radius: 8px; color: white; font-weight: 600; margin-bottom: 10px; cursor: pointer;">
+                            💣 Propose Bomb Pot
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -2205,6 +2303,33 @@
             <input type="number" id="topUpAmount" placeholder="Amount to add ($)" min="1">
             <button onclick="confirmTopUp()">Top Up</button>
             <button class="close-btn" onclick="closeModal('topUpModal')">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Bomb Pot Vote Modal -->
+    <div class="modal" id="bombPotVoteModal">
+        <div class="modal-content">
+            <h3>💣 Bomb Pot Vote</h3>
+            <p id="bombPotVoteText">Someone proposed a bomb pot!</p>
+            <div style="display: flex; gap: 12px; margin: 20px 0;">
+                <button onclick="voteBombPot(true)" style="flex: 1; background: linear-gradient(135deg, #22c55e, #16a34a); border: none; border-radius: 8px; color: white; font-weight: 600; padding: 12px;">Yes</button>
+                <button onclick="voteBombPot(false)" style="flex: 1; background: linear-gradient(135deg, #dc2626, #991b1b); border: none; border-radius: 8px; color: white; font-weight: 600; padding: 12px;">No</button>
+            </div>
+            <div id="bombPotTimer" style="text-align: center; color: #8892b0; font-size: 0.9em;"></div>
+        </div>
+    </div>
+
+    <!-- Run It Twice Vote Modal -->
+    <div class="modal" id="runItTwiceModal">
+        <div class="modal-content">
+            <h3>⚡ Run It Twice?</h3>
+            <p>All-in detected. Do you want to run it twice?<br>
+            <small style="color: #8892b0;">Both players must agree. Deal two separate boards and split the pot 50/50.</small></p>
+            <div style="display: flex; gap: 12px; margin: 20px 0;">
+                <button onclick="voteRunItTwice(true)" style="flex: 1; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border: none; border-radius: 8px; color: white; font-weight: 600; padding: 12px;">Yes, Run It Twice</button>
+                <button onclick="voteRunItTwice(false)" style="flex: 1; background: linear-gradient(135deg, #6b7280, #4b5563); border: none; border-radius: 8px; color: white; font-weight: 600; padding: 12px;">No, Run Once</button>
+            </div>
+            <div id="runItTwiceTimer" style="text-align: center; color: #8892b0; font-size: 0.9em;"></div>
         </div>
     </div>
 
@@ -2682,6 +2807,107 @@
             bubble.textContent = msg;
         }
 
+        // ===== POLISH FEATURES =====
+
+        // Bomb Pot Functions
+        async function proposeBombPot() {
+            if (!gameState.token) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/propose-bomb-pot`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: gameState.token })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('Bomb pot proposed!', 'success');
+                    document.getElementById('bombPotBtn').disabled = true;
+                } else {
+                    showStatus(data.error || 'Cannot propose bomb pot', 'error');
+                }
+            } catch (error) {
+                showStatus('Connection error', 'error');
+                console.error('Bomb pot proposal error:', error);
+            }
+        }
+
+        async function voteBombPot(vote) {
+            if (!gameState.token) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/vote-bomb-pot`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: gameState.token, vote })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    closeModal('bombPotVoteModal');
+                    showStatus(`Voted ${vote ? 'YES' : 'NO'} for bomb pot`, 'success');
+                } else {
+                    showStatus(data.error || 'Vote failed', 'error');
+                }
+            } catch (error) {
+                showStatus('Connection error', 'error');
+                console.error('Bomb pot vote error:', error);
+            }
+        }
+
+        // Run It Twice Functions
+        async function voteRunItTwice(vote) {
+            if (!gameState.token) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/vote-run-it-twice`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: gameState.token, vote })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    closeModal('runItTwiceModal');
+                    showStatus(`Voted ${vote ? 'YES' : 'NO'} for run it twice`, 'success');
+                } else {
+                    showStatus(data.error || 'Vote failed', 'error');
+                }
+            } catch (error) {
+                showStatus('Connection error', 'error');
+                console.error('Run it twice vote error:', error);
+            }
+        }
+
+        // Enhanced Chat Functions
+        async function addChatReaction(messageId, emoji) {
+            if (!gameState.token) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/react-to-chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        token: gameState.token, 
+                        messageId, 
+                        emoji 
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (!data.success && data.error) {
+                    showStatus(data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Chat reaction error:', error);
+            }
+        }
+
         // Update the game display
         function updateGameDisplay(state) {
             // Update theme based on table type
@@ -3049,6 +3275,15 @@
 
                 // Update chip stack visualization
                 updatePlayerChipStack(seat, player.stack);
+                
+                // Update player stats display
+                updatePlayerStats(seat, player);
+
+                // Add hover tooltip for stats
+                if (player.stats && player.stats.hands > 0) {
+                    seat.onmouseenter = () => showPlayerStatsTooltip(seat, player);
+                    seat.onmouseleave = () => hidePlayerStatsTooltip();
+                }
             }
         }
 
@@ -3169,6 +3404,7 @@
             const topUpSection = document.getElementById('topUpSection');
             const sitOutSection = document.getElementById('sitOutSection');
             const returnSection = document.getElementById('returnSection');
+            const bombPotSection = document.getElementById('bombPotSection');
             
             if (!gameState.isSpectating && state.you) {
                 playerActionsSection.style.display = 'block';
@@ -3191,12 +3427,137 @@
                 if (state.you.sitOut) {
                     sitOutSection.style.display = 'none';
                     returnSection.style.display = 'block';
+                    bombPotSection.style.display = 'none';
                 } else {
                     sitOutSection.style.display = 'block';
                     returnSection.style.display = 'none';
+                    
+                    // Show bomb pot button if in waiting phase and enough players
+                    const activePlayers = (state.players || []).filter(p => p && !p.sitOut && p.stack > 0).length;
+                    if (state.phase === 'waiting' && activePlayers >= 2) {
+                        bombPotSection.style.display = 'block';
+                    } else {
+                        bombPotSection.style.display = 'none';
+                    }
                 }
             } else {
                 playerActionsSection.style.display = 'none';
+            }
+        }
+
+        // UI Helper Functions for New Features
+        function showBombPotVoteModal(data) {
+            const modal = document.getElementById('bombPotVoteModal');
+            const text = document.getElementById('bombPotVoteText');
+            const timer = document.getElementById('bombPotTimer');
+            
+            text.textContent = `${data.proposedBy} proposes a bomb pot! Everyone antes $${data.ante}.`;
+            modal.style.display = 'flex';
+            
+            // Countdown timer
+            let timeLeft = data.timeLeft;
+            const countdown = setInterval(() => {
+                timer.textContent = `${timeLeft}s remaining`;
+                timeLeft--;
+                if (timeLeft < 0) {
+                    clearInterval(countdown);
+                    closeModal('bombPotVoteModal');
+                }
+            }, 1000);
+        }
+
+        function showRunItTwiceModal(data) {
+            const modal = document.getElementById('runItTwiceModal');
+            const timer = document.getElementById('runItTwiceTimer');
+            
+            modal.style.display = 'flex';
+            
+            // Countdown timer
+            let timeLeft = data.timeLeft;
+            const countdown = setInterval(() => {
+                timer.textContent = `${timeLeft}s remaining`;
+                timeLeft--;
+                if (timeLeft < 0) {
+                    clearInterval(countdown);
+                    closeModal('runItTwiceModal');
+                }
+            }, 1000);
+        }
+
+        function showRunItTwiceBoards(board1, board2) {
+            const communityContainer = document.getElementById('communityCards');
+            
+            // Clear existing cards
+            communityContainer.innerHTML = '';
+            
+            // Create two board displays
+            const board1Container = document.createElement('div');
+            board1Container.style.display = 'flex';
+            board1Container.style.gap = '5px';
+            board1Container.style.marginBottom = '10px';
+            
+            const board2Container = document.createElement('div');
+            board2Container.style.display = 'flex';
+            board2Container.style.gap = '5px';
+            
+            // Add board labels
+            const label1 = document.createElement('div');
+            label1.textContent = 'Board 1:';
+            label1.style.fontSize = '0.8em';
+            label1.style.color = '#8892b0';
+            label1.style.marginBottom = '5px';
+            
+            const label2 = document.createElement('div');
+            label2.textContent = 'Board 2:';
+            label2.style.fontSize = '0.8em';
+            label2.style.color = '#8892b0';
+            label2.style.marginBottom = '5px';
+            
+            board1.forEach(card => {
+                board1Container.appendChild(createCardElement(card, false));
+            });
+            
+            board2.forEach(card => {
+                board2Container.appendChild(createCardElement(card, false));
+            });
+            
+            const wrapper = document.createElement('div');
+            wrapper.style.textAlign = 'center';
+            wrapper.appendChild(label1);
+            wrapper.appendChild(board1Container);
+            wrapper.appendChild(document.createElement('br'));
+            wrapper.appendChild(label2);
+            wrapper.appendChild(board2Container);
+            
+            communityContainer.appendChild(wrapper);
+        }
+
+        function updateChatReactions(messageId, reactions) {
+            const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+            if (!messageElement) return;
+            
+            // Remove existing reactions
+            const existingReactions = messageElement.querySelector('.chat-reactions');
+            if (existingReactions) {
+                existingReactions.remove();
+            }
+            
+            // Add updated reactions
+            if (reactions && Object.keys(reactions).length > 0) {
+                const reactionsDiv = document.createElement('div');
+                reactionsDiv.className = 'chat-reactions';
+                
+                for (const [emoji, playerIds] of Object.entries(reactions)) {
+                    if (playerIds.length > 0) {
+                        const reactionSpan = document.createElement('span');
+                        reactionSpan.className = `chat-reaction ${playerIds.includes(gameState.token) ? 'active' : ''}`;
+                        reactionSpan.textContent = `${emoji} ${playerIds.length}`;
+                        reactionSpan.onclick = () => addChatReaction(messageId, emoji);
+                        reactionsDiv.appendChild(reactionSpan);
+                    }
+                }
+                
+                messageElement.appendChild(reactionsDiv);
             }
         }
 
@@ -3623,6 +3984,97 @@
             }
         }
 
+        // Player Stats Display Functions
+        function updatePlayerStats(seat, player) {
+            let statsElement = seat.querySelector('.player-stats');
+            if (!statsElement) {
+                statsElement = document.createElement('div');
+                statsElement.className = 'player-stats';
+                seat.appendChild(statsElement);
+            }
+
+            if (player.stats && player.stats.hands > 0) {
+                statsElement.style.display = 'block';
+                statsElement.textContent = `VPIP: ${player.stats.vpip}% | PFR: ${player.stats.pfr}%`;
+            } else {
+                statsElement.style.display = 'none';
+            }
+        }
+
+        function showPlayerStatsTooltip(seat, player) {
+            if (!player.stats || player.stats.hands === 0) return;
+
+            const tooltip = document.createElement('div');
+            tooltip.className = 'player-stats-tooltip';
+            tooltip.id = 'playerStatsTooltip';
+            
+            tooltip.innerHTML = `
+                <strong>${player.name} Session Stats</strong><br>
+                Hands Played: ${player.stats.hands}<br>
+                VPIP: ${player.stats.vpip}% (Voluntarily Put $ In Pot)<br>
+                PFR: ${player.stats.pfr}% (Pre-Flop Raise)<br>
+                AF: ${player.stats.af} (Aggression Factor)
+            `;
+
+            document.body.appendChild(tooltip);
+
+            // Position tooltip
+            const rect = seat.getBoundingClientRect();
+            tooltip.style.position = 'fixed';
+            tooltip.style.left = (rect.left + rect.width / 2) + 'px';
+            tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+            tooltip.style.transform = 'translateX(-50%)';
+        }
+
+        function hidePlayerStatsTooltip() {
+            const tooltip = document.getElementById('playerStatsTooltip');
+            if (tooltip) {
+                tooltip.remove();
+            }
+        }
+
+        // Enhanced Chat Display Functions
+        function displayChatMessage(message) {
+            const entry = document.createElement('div');
+            entry.className = `chat-entry ${message.isMitsuki ? 'mitsuki' : ''}`;
+            entry.setAttribute('data-message-id', message.id);
+            
+            let html = `<span class="chat-sender">${message.sender}:</span> ${message.text}`;
+            html += `<span class="chat-timestamp">${message.timestamp}</span>`;
+            
+            if (!gameState.isSpectating) {
+                html += `
+                    <span class="reaction-controls">
+                        <button class="reaction-btn" onclick="addChatReaction(${message.id}, '👍')">👍</button>
+                        <button class="reaction-btn" onclick="addChatReaction(${message.id}, '😂')">😂</button>
+                        <button class="reaction-btn" onclick="addChatReaction(${message.id}, '🔥')">🔥</button>
+                    </span>
+                `;
+            }
+            
+            entry.innerHTML = html;
+
+            // Add reactions if they exist
+            if (message.reactions && Object.keys(message.reactions).length > 0) {
+                const reactionsDiv = document.createElement('div');
+                reactionsDiv.className = 'chat-reactions';
+                
+                for (const [emoji, playerIds] of Object.entries(message.reactions)) {
+                    if (playerIds.length > 0) {
+                        const reactionSpan = document.createElement('span');
+                        reactionSpan.className = `chat-reaction ${playerIds.includes(gameState.token) ? 'active' : ''}`;
+                        reactionSpan.textContent = `${emoji} ${playerIds.length}`;
+                        reactionSpan.onclick = () => addChatReaction(message.id, emoji);
+                        reactionsDiv.appendChild(reactionSpan);
+                    }
+                }
+                
+                entry.appendChild(reactionsDiv);
+            }
+
+            return entry;
+        }
+
         // Handle WebSocket messages
         function handleWebSocketMessage(data) {
             if (data.type === 'gameUpdate') {
@@ -3654,6 +4106,59 @@
                 const bubble = document.getElementById('mitsukiSpeech');
                 if (bubble) {
                     bubble.textContent = data.message;
+                }
+            } else if (data.type === 'chat_message') {
+                // Enhanced chat message
+                const chatContainer = document.getElementById('tableFeed');
+                const leftChatContainer = document.getElementById('chatMessagesLeft');
+                
+                const messageElement = displayChatMessage(data.message);
+                
+                if (chatContainer) {
+                    chatContainer.appendChild(messageElement.cloneNode(true));
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
+                
+                if (leftChatContainer && data.message.isMitsuki) {
+                    const leftEntry = document.createElement('div');
+                    leftEntry.className = 'chat-entry';
+                    leftEntry.style.color = '#d4a937';
+                    leftEntry.style.fontStyle = 'italic';
+                    leftEntry.innerHTML = `${data.message.sender}: ${data.message.text}`;
+                    leftChatContainer.appendChild(leftEntry);
+                    leftChatContainer.scrollTop = leftChatContainer.scrollHeight;
+                }
+            } else if (data.type === 'chat_reaction_update') {
+                // Update chat reactions in real time
+                updateChatReactions(data.messageId, data.reactions);
+            } else if (data.type === 'bomb_pot_vote') {
+                // Show bomb pot voting modal
+                showBombPotVoteModal(data);
+            } else if (data.type === 'bomb_pot_result') {
+                // Show bomb pot result
+                closeModal('bombPotVoteModal');
+                if (data.approved) {
+                    showStatus('💣 Bomb pot approved! Next hand will be explosive!', 'success');
+                } else {
+                    showStatus('Bomb pot rejected.', 'info');
+                }
+            } else if (data.type === 'run_it_twice_prompt') {
+                // Show run it twice voting modal
+                showRunItTwiceModal(data);
+            } else if (data.type === 'run_it_twice_boards') {
+                // Display both boards
+                showRunItTwiceBoards(data.board1, data.board2);
+            } else if (data.type === 'bomb_pot_started') {
+                // Visual indication that bomb pot started
+                showStatus('💣 BOMB POT! Everyone antes and action starts on the flop!', 'success');
+                document.getElementById('mitsukiSpeech').style.borderColor = '#dc2626';
+                setTimeout(() => {
+                    document.getElementById('mitsukiSpeech').style.borderColor = '';
+                }, 3000);
+            } else if (data.type === 'show_tip_modal') {
+                // Show tip modal from /tip command
+                if (data.playerId === gameState.token) {
+                    showTipModal();
                 }
             }
         }

@@ -331,6 +331,96 @@ function createRoutes(tableManager) {
   });
 
   /**
+   * POST /api/propose-bomb-pot
+   * Propose a bomb pot vote. Body: { token }
+   */
+  router.post('/propose-bomb-pot', (req, res) => {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ error: 'Token is required' });
+
+    const table = tableManager.findTableByPlayer(token);
+    if (!table) {
+      return res.status(404).json({ error: 'Player not found at any table' });
+    }
+
+    const result = table.proposeBombPot(token);
+    if (result.error) {
+      return res.status(400).json(result);
+    }
+
+    res.json(result);
+  });
+
+  /**
+   * POST /api/vote-bomb-pot
+   * Vote on bomb pot. Body: { token, vote }
+   */
+  router.post('/vote-bomb-pot', (req, res) => {
+    const { token, vote } = req.body;
+    if (!token || typeof vote !== 'boolean') {
+      return res.status(400).json({ error: 'Token and vote (boolean) are required' });
+    }
+
+    const table = tableManager.findTableByPlayer(token);
+    if (!table) {
+      return res.status(404).json({ error: 'Player not found at any table' });
+    }
+
+    const result = table.voteBombPot(token, vote);
+    if (result.error) {
+      return res.status(400).json(result);
+    }
+
+    res.json(result);
+  });
+
+  /**
+   * POST /api/vote-run-it-twice
+   * Vote on run it twice. Body: { token, vote }
+   */
+  router.post('/vote-run-it-twice', (req, res) => {
+    const { token, vote } = req.body;
+    if (!token || typeof vote !== 'boolean') {
+      return res.status(400).json({ error: 'Token and vote (boolean) are required' });
+    }
+
+    const table = tableManager.findTableByPlayer(token);
+    if (!table) {
+      return res.status(404).json({ error: 'Player not found at any table' });
+    }
+
+    const result = table.voteRunItTwice(token, vote);
+    if (result.error) {
+      return res.status(400).json(result);
+    }
+
+    res.json(result);
+  });
+
+  /**
+   * POST /api/react-to-chat
+   * Add reaction to chat message. Body: { token, messageId, emoji }
+   */
+  router.post('/react-to-chat', (req, res) => {
+    const { token, messageId, emoji } = req.body;
+    if (!token || !messageId || !emoji) {
+      return res.status(400).json({ error: 'Token, messageId, and emoji are required' });
+    }
+
+    const table = tableManager.findTableByPlayer(token);
+    if (!table) {
+      return res.status(404).json({ error: 'Player not found at any table' });
+    }
+
+    const result = table.addReaction(parseInt(messageId), emoji, token);
+    if (result.error) {
+      return res.status(400).json(result);
+    }
+
+    res.json(result);
+  });
+
+  /**
    * POST /api/reset
    * Admin: clear all tables and players. Body: { confirm: true }
    */

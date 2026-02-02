@@ -42,4 +42,16 @@ module.exports = {
     rateLimitMs: 5000,  // Max 1 comment every 5 seconds
     pitBossThreshold: 500,  // Pot size to trigger auto-verify
   },
+
+  // Polish Features
+  RUN_IT_TWICE: {
+    enabled: true,
+    promptTimeMs: 5000,  // 5 seconds to decide
+  },
+  
+  BOMB_POTS: {
+    enabled: true,
+    ante: 5,  // 5x BB ante for bomb pot
+    voteTimeMs: 10000,  // 10 seconds to vote
+  },
 };

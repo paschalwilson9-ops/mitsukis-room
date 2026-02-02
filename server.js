@@ -181,16 +181,7 @@ wss.on('connection', (ws, req) => {
       if (msg.type === 'chat' && msg.text) {
         const player = table.seats.find(p => p && p.id === token);
         const playerName = player ? player.name : 'Spectator';
-        const chatMsg = {
-          type: 'chat',
-          sender: playerName,
-          text: msg.text.slice(0, 200), // limit length
-          timestamp: Date.now()
-        };
-        // Broadcast to all connected clients
-        if (table.broadcast) {
-          table.broadcast(chatMsg);
-        }
+        table.addChatMessage(playerName, msg.text.slice(0, 200), token);
       }
     } catch (e) {
       ws.send(JSON.stringify({ error: 'Invalid message format' }));
