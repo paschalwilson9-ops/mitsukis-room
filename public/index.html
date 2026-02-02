@@ -156,6 +156,10 @@
         .game-area {
             flex: 1;
             background: radial-gradient(ellipse at center, #0a1a1a 0%, #050810 100%);
+            background-image: url('/img/poker-room-bg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             position: relative;
             overflow: hidden;
         }
@@ -167,10 +171,9 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-image: 
-                radial-gradient(circle at 20% 30%, rgba(136, 146, 176, 0.03) 0%, transparent 50%),
-                radial-gradient(circle at 80% 70%, rgba(136, 146, 176, 0.02) 0%, transparent 50%);
+            background: rgba(5, 8, 16, 0.75);
             pointer-events: none;
+            z-index: 0;
         }
 
         .poker-table {
@@ -351,9 +354,9 @@
         }
 
         .card.large {
-            width: 70px;
-            height: 98px;
-            font-size: 14px;
+            width: 80px;
+            height: 112px;
+            font-size: 16px;
             box-shadow: 0 6px 16px rgba(0,0,0,0.7), 0 3px 6px rgba(0,0,0,0.4);
         }
 
@@ -959,6 +962,129 @@
             transform: translateX(0);
         }
 
+        /* Mitsuki Speech Bubble */
+        .mitsuki-speech-bubble {
+            position: absolute;
+            top: 2%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 5;
+            max-width: 200px;
+            background: rgba(10, 12, 20, 0.85);
+            color: #c8d3dc;
+            font-style: italic;
+            font-size: 0.8em;
+            padding: 8px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(136, 146, 176, 0.25);
+            text-align: center;
+            pointer-events: none;
+            backdrop-filter: blur(6px);
+            transition: opacity 0.4s ease;
+            line-height: 1.4;
+        }
+
+        .mitsuki-speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid rgba(10, 12, 20, 0.85);
+        }
+
+        /* Table Info Bar */
+        .table-info-bar {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            z-index: 6;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.75em;
+            color: #8892b0;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(136, 146, 176, 0.12);
+            line-height: 1.6;
+            pointer-events: none;
+        }
+
+        .table-info-bar span {
+            display: block;
+        }
+
+        /* Compact sidebar header */
+        .sidebar-compact-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(136, 146, 176, 0.15);
+            flex-wrap: wrap;
+        }
+
+        .sidebar-compact-header .vol-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .sidebar-compact-header .vol-group button {
+            background: rgba(136,146,176,0.15);
+            border: 1px solid rgba(136,146,176,0.2);
+            color: #c8d3dc;
+            padding: 2px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .sidebar-compact-header .vol-group input[type="range"] {
+            flex: 1;
+            accent-color: #8892b0;
+            height: 3px;
+            max-width: 80px;
+        }
+
+        .sidebar-compact-header .vol-group .vol-label {
+            font-size: 11px;
+            color: #8892b0;
+            min-width: 28px;
+        }
+
+        .sidebar-compact-header .conn-status {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: rgba(0,0,0,0.3);
+            white-space: nowrap;
+        }
+
+        .sidebar-compact-header .leave-btn {
+            padding: 3px 10px;
+            border: 1px solid #e53e3e;
+            border-radius: 4px;
+            background: rgba(245, 101, 101, 0.1);
+            color: #fed7d7;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .sidebar-compact-header .leave-btn:hover {
+            background: rgba(245, 101, 101, 0.2);
+        }
+
         @keyframes dealCard {
             from {
                 transform: translateY(-100px) rotate(180deg);
@@ -989,34 +1115,7 @@
             animation: chipMove 0.4s ease-out;
         }
 
-        /* Connection status styling */
-        #connectionStatus {
-            text-align: center;
-            margin: 15px 0;
-            font-size: 0.9em;
-            padding: 8px;
-            border-radius: 5px;
-            background: rgba(0,0,0,0.3);
-        }
-
-        #leaveSection button {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            border: 1px solid #e53e3e;
-            border-radius: 5px;
-            background: rgba(245, 101, 101, 0.1);
-            color: #fed7d7;
-            font-size: 1em;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        #leaveSection button:hover {
-            background: rgba(245, 101, 101, 0.2);
-            box-shadow: 0 0 15px rgba(245, 101, 101, 0.2);
-        }
+        /* Connection status styling (now inline in compact header) */
 
         /* Empty State */
         .empty-state {
@@ -1674,6 +1773,15 @@
         <div class="game-area">
             <div class="poker-table">
                 <div class="felt-pattern"></div>
+
+                <!-- Table Info Bar -->
+                <div class="table-info-bar" id="tableInfoBar">
+                    <span id="blindsInfo">Blinds: $1/$2</span>
+                    <span id="playerCountInfo">Players: 0/9</span>
+                </div>
+
+                <!-- Mitsuki Speech Bubble -->
+                <div class="mitsuki-speech-bubble" id="mitsukiSpeech">Waiting for more players...</div>
                 
                 <!-- Empty State -->
                 <div class="empty-state" id="emptyState">
@@ -1735,11 +1843,15 @@
         </div>
 
         <div class="sidebar">
-            <!-- Sound Controls -->
-            <div style="padding: 10px 15px; border-bottom: 1px solid rgba(136,146,176,0.15); display: flex; align-items: center; gap: 10px;">
-                <button id="muteToggleBtn" onclick="toggleMute()" style="background: rgba(136,146,176,0.15); border: 1px solid rgba(136,146,176,0.2); color: #c8d3dc; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; white-space: nowrap;">🔊 Mute</button>
-                <input type="range" min="0" max="1" step="0.05" value="0.3" oninput="setVolume(this.value)" style="flex: 1; accent-color: #8892b0; height: 4px;">
-                <span id="volumeLabel" style="font-size: 12px; color: #8892b0; min-width: 30px;">30%</span>
+            <!-- Compact Header: Volume + Connection + Leave -->
+            <div class="sidebar-compact-header">
+                <div class="vol-group">
+                    <button id="muteToggleBtn" onclick="toggleMute()">🔊</button>
+                    <input type="range" min="0" max="1" step="0.05" value="0.3" oninput="setVolume(this.value)">
+                    <span class="vol-label" id="volumeLabel">30%</span>
+                </div>
+                <span class="conn-status" id="connectionStatus">🔴 Disconnected</span>
+                <button class="leave-btn" id="compactLeaveBtn" onclick="leaveGame()" style="display: none;">Leave Game</button>
             </div>
 
             <!-- Crypto Wallet Section -->
@@ -1782,15 +1894,8 @@
                 <button onclick="joinGame()">Join Game</button>
             </div>
 
-            <!-- Leave Button (hidden initially) -->
-            <div id="leaveSection" style="display: none;">
-                <button onclick="leaveGame()">Leave Game</button>
-            </div>
-
-            <!-- Connection Status -->
-            <div id="connectionStatus">
-                🔴 Disconnected
-            </div>
+            <!-- Leave Button (hidden initially, controlled by compact header) -->
+            <div id="leaveSection" style="display: none;"></div>
 
             <!-- Game Log -->
             <div class="game-log">
@@ -1952,6 +2057,7 @@
                             gameState.isSpectating = false;
                             document.getElementById('joinForm').style.display = 'none';
                             document.getElementById('leaveSection').style.display = 'block';
+                            document.getElementById('compactLeaveBtn').style.display = 'inline-block';
                             document.getElementById('playerName').value = localStorage.getItem('mitsuki_name') || '';
                             showStatus('Session restored!', 'success');
                             updateGameDisplay(data);
@@ -1974,6 +2080,37 @@
             // Chat enter key
             document.getElementById('chatInput').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') sendChat();
+            });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                // Don't trigger if typing in an input field
+                const tag = document.activeElement.tagName.toLowerCase();
+                if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+                const actionBtns = document.getElementById('actionButtons');
+                const isVisible = actionBtns && actionBtns.classList.contains('visible');
+
+                switch (e.key) {
+                    case 'f':
+                    case 'F':
+                        if (isVisible) performAction('fold');
+                        break;
+                    case 'c':
+                    case 'C':
+                        if (isVisible) {
+                            const btn = document.getElementById('checkCallBtn');
+                            if (btn) btn.click();
+                        }
+                        break;
+                    case 'r':
+                    case 'R':
+                        if (isVisible) showRaiseControls();
+                        break;
+                    case 'Escape':
+                        hideRaiseControls();
+                        break;
+                }
             });
 
             // Set up raise slider
@@ -2125,6 +2262,13 @@
                         <div class="timer-bar"></div>
                     </div>
                 `;
+                // Clickable empty seats → focus join form
+                seat.addEventListener('click', () => {
+                    if (seat.classList.contains('empty') && gameState.isSpectating) {
+                        document.getElementById('playerName').focus();
+                        document.getElementById('joinForm').scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
                 seatsContainer.appendChild(seat);
             }
         }
@@ -2159,6 +2303,7 @@
                     
                     document.getElementById('joinForm').style.display = 'none';
                     document.getElementById('leaveSection').style.display = 'block';
+                    document.getElementById('compactLeaveBtn').style.display = 'inline-block';
                     
                     setDealerAnimation('thankyou');
                     showStatus(`Welcome to the table, ${name}! Seat ${data.seat + 1}`, 'success');
@@ -2212,6 +2357,7 @@
             
             document.getElementById('joinForm').style.display = 'block';
             document.getElementById('leaveSection').style.display = 'none';
+            document.getElementById('compactLeaveBtn').style.display = 'none';
             document.getElementById('actionButtons').classList.remove('visible');
             document.getElementById('playerCards').innerHTML = '';
             
@@ -2244,6 +2390,49 @@
         // Track hand number to reset card caches on new hand
         let _lastHandNumber = null;
 
+        // Mitsuki idle quips
+        const mitsukiIdleQuips = [
+            "The moon watches patiently.",
+            "Take your time.",
+            "Interesting...",
+            "The night is still young.",
+            "Every hand tells a story.",
+            "Fortune favors the bold... or the patient."
+        ];
+        let _lastMitsukiQuip = '';
+
+        // Update Mitsuki speech bubble
+        function updateMitsukiSpeech(state) {
+            const bubble = document.getElementById('mitsukiSpeech');
+            if (!bubble) return;
+
+            const playerCount = (state.players || []).filter(p => p !== null).length;
+            const phase = state.phase || 'waiting';
+            let msg = '';
+
+            if (playerCount < 2) {
+                msg = 'Waiting for more players...';
+            } else {
+                switch (phase) {
+                    case 'preflop': msg = 'Cards in the air! 🃏'; break;
+                    case 'flop': msg = 'The flop is out.'; break;
+                    case 'turn': msg = 'Fourth street.'; break;
+                    case 'river': msg = 'Last card.'; break;
+                    case 'showdown': msg = 'And the winner is...'; break;
+                    default:
+                        // Random idle quip
+                        if (Math.random() < 0.3 || !_lastMitsukiQuip) {
+                            msg = mitsukiIdleQuips[Math.floor(Math.random() * mitsukiIdleQuips.length)];
+                            _lastMitsukiQuip = msg;
+                        } else {
+                            msg = _lastMitsukiQuip;
+                        }
+                }
+            }
+
+            bubble.textContent = msg;
+        }
+
         // Update the game display
         function updateGameDisplay(state) {
             // Reset card caches when hand changes
@@ -2254,10 +2443,58 @@
             }
 
             try {
-                // Update players FIRST — most important visual
+                // Calculate dealer/blind flags from dealerSeat
                 const players = state.players || [];
                 const validPlayers = players.filter(p => p !== null);
+
+                if (state.dealerSeat !== undefined && state.dealerSeat !== null && validPlayers.length >= 2) {
+                    // Clear old flags
+                    validPlayers.forEach(p => {
+                        p.isDealer = false;
+                        p.isSmallBlind = false;
+                        p.isBigBlind = false;
+                    });
+
+                    // Get occupied seats sorted
+                    const occupiedSeats = validPlayers.map(p => p.seat).sort((a, b) => a - b);
+
+                    // Find dealer in occupied seats
+                    const dealerIdx = occupiedSeats.indexOf(state.dealerSeat);
+                    const dealerPlayer = validPlayers.find(p => p.seat === state.dealerSeat);
+                    if (dealerPlayer) dealerPlayer.isDealer = true;
+
+                    if (validPlayers.length === 2) {
+                        // Heads-up: dealer = SB, other = BB
+                        if (dealerPlayer) dealerPlayer.isSmallBlind = true;
+                        const otherPlayer = validPlayers.find(p => p.seat !== state.dealerSeat);
+                        if (otherPlayer) otherPlayer.isBigBlind = true;
+                    } else if (dealerIdx !== -1) {
+                        // SB = next seat after dealer, BB = seat after that
+                        const sbSeat = occupiedSeats[(dealerIdx + 1) % occupiedSeats.length];
+                        const bbSeat = occupiedSeats[(dealerIdx + 2) % occupiedSeats.length];
+                        const sbPlayer = validPlayers.find(p => p.seat === sbSeat);
+                        const bbPlayer = validPlayers.find(p => p.seat === bbSeat);
+                        if (sbPlayer) sbPlayer.isSmallBlind = true;
+                        if (bbPlayer) bbPlayer.isBigBlind = true;
+                    }
+                }
+
+                // Update players FIRST — most important visual
                 updatePlayers(validPlayers);
+
+                // Update table info bar
+                const playerCount = validPlayers.length;
+                const blindsEl = document.getElementById('blindsInfo');
+                const countEl = document.getElementById('playerCountInfo');
+                if (blindsEl) {
+                    const sb = state.smallBlind || 1;
+                    const bb = state.bigBlind || 2;
+                    blindsEl.textContent = `Blinds: $${sb}/$${bb}`;
+                }
+                if (countEl) countEl.textContent = `Players: ${playerCount}/9`;
+
+                // Update Mitsuki speech bubble
+                updateMitsukiSpeech(state);
             } catch (e) {
                 console.error('updatePlayers failed:', e);
             }
