@@ -2143,7 +2143,9 @@
 
             // Update players - ensure we have valid player data
             const players = state.players || [];
-            updatePlayers(players.filter(p => p !== null));
+            const validPlayers = players.filter(p => p !== null);
+            console.log('updateGameDisplay: validPlayers=', validPlayers.length, validPlayers.map(p => p.name + '@seat' + p.seat));
+            updatePlayers(validPlayers);
 
             // Update player's cards (use state.you.holeCards if available)
             if (state.you && state.you.holeCards && !gameState.isSpectating) {
@@ -2164,7 +2166,7 @@
         // Update empty state
         function updateEmptyState(state) {
             const emptyState = document.getElementById('emptyState');
-            const activePlayers = (state.players || []).filter(p => p.active).length;
+            const activePlayers = (state.players || []).filter(p => p && (p.active || p.status === 'active')).length;
             
             if (activePlayers < 2) {
                 emptyState.classList.add('visible');
@@ -2297,6 +2299,7 @@
 
         // Update a single player seat
         function updateSinglePlayerSeat(player) {
+            console.log('updateSinglePlayerSeat:', player.name, 'seat:', player.seat);
             const seat = document.getElementById(`seat-${player.seat}`);
             if (seat) {
                 seat.classList.remove('empty');
