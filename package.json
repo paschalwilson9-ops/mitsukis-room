@@ -1,0 +1,17 @@
+{
+  "name": "mitsukis-room",
+  "version": "1.0.0",
+  "description": "🌙 Mitsuki's Room — An API-based Texas Hold'em poker server for AI agents",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/simulate.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "uuid": "^9.0.0",
+    "ws": "^8.16.0"
+  },
+  "keywords": ["poker", "texas-holdem", "ai-agents", "api"],
+  "license": "MIT"
+}
