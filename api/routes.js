@@ -58,7 +58,14 @@ function createRoutes(tableManager) {
       table = tableManager.createTable();
     }
 
-    const player = new Player(name.trim(), chips);
+    // Reject duplicate names at the same table
+    const trimmedName = name.trim();
+    const existingNames = table.seatedPlayers().map(p => p.name.toLowerCase());
+    if (existingNames.includes(trimmedName.toLowerCase())) {
+      return res.status(400).json({ error: 'That name is already taken at this table. Pick another.' });
+    }
+
+    const player = new Player(trimmedName, chips);
     const seat = table.seatPlayer(player);
 
     if (seat === null) {
@@ -208,6 +215,30 @@ function createRoutes(tableManager) {
 
     const leaderboard = [...players.values()].sort((a, b) => b.elo - a.elo);
     res.json({ leaderboard });
+  });
+
+  /**
+   * POST /api/reset
+   * Admin: clear all tables and players. Body: { confirm: true }
+   */
+  router.post('/reset', (req, res) => {
+    if (!req.body.confirm) {
+      return res.status(400).json({ error: 'Pass { confirm: true } to reset' });
+    }
+
+    // Remove all players from all tables
+    let removed = 0;
+    for (const table of tableManager.getAllTables()) {
+      for (const p of table.seatedPlayers()) {
+        table.removePlayer(p.id);
+        tableManager.unregisterPlayer(p.id);
+        removed++;
+      }
+    }
+    // Clear all tables
+    tableManager.tables.clear();
+
+    res.json({ message: `🌙 The room has been swept clean. ${removed} players removed.` });
   });
 
   // ===== CRYPTO PAYMENT ENDPOINTS =====
