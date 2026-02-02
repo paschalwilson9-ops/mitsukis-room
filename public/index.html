@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🌙 Mitsuki's Room - Private Poker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,46 +13,116 @@
         }
 
         body {
-            font-family: 'Georgia', serif;
-            background: #0a0a0a;
-            color: #d4af37;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at center, #0a0a1a 0%, #000005 100%);
+            color: #c8d3dc;
             overflow: hidden;
             height: 100vh;
+            position: relative;
+        }
+
+        /* Floating moon dust particles */
+        .moon-dust {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .dust-particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(200, 211, 220, 0.6);
+            border-radius: 50%;
+            animation: float 15s infinite linear;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) translateX(0px);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-10px) translateX(100px);
+                opacity: 0;
+            }
         }
 
         .header {
-            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-            padding: 15px 30px;
-            border-bottom: 2px solid #d4af37;
-            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
+            background: linear-gradient(135deg, #0d1421 0%, #1a1a2e 50%, #16213e 100%);
+            padding: 20px 30px;
+            border-bottom: 2px solid #8892b0;
+            box-shadow: 0 4px 20px rgba(136, 146, 176, 0.2);
+            position: relative;
+            z-index: 10;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at center, rgba(136, 146, 176, 0.1) 0%, transparent 70%);
+            pointer-events: none;
         }
 
         .header h1 {
-            font-size: 2.2em;
-            text-shadow: 0 0 20px rgba(212, 175, 55, 0.8);
+            font-family: 'Playfair Display', serif;
+            font-size: 2.4em;
+            font-weight: 700;
+            text-shadow: 0 0 20px rgba(136, 146, 176, 0.8);
             margin: 0;
             display: inline-block;
+            color: #f8fafc;
         }
 
         .header .motto {
             float: right;
+            font-family: 'Playfair Display', serif;
             font-style: italic;
             font-size: 1.1em;
-            color: #b8860b;
-            text-shadow: 0 0 10px rgba(184, 134, 11, 0.6);
-            margin-top: 5px;
+            color: #8892b0;
+            text-shadow: 0 0 10px rgba(136, 146, 176, 0.4);
+            margin-top: 8px;
         }
 
         .main-container {
             display: flex;
-            height: calc(100vh - 80px);
+            height: calc(100vh - 84px);
+            position: relative;
+            z-index: 5;
         }
 
         .game-area {
             flex: 1;
-            background: radial-gradient(ellipse at center, #0d5d0d 0%, #062306 100%);
+            background: radial-gradient(ellipse at center, #0a1a1a 0%, #050810 100%);
             position: relative;
             overflow: hidden;
+        }
+
+        .game-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(136, 146, 176, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(136, 146, 176, 0.02) 0%, transparent 50%);
+            pointer-events: none;
         }
 
         .poker-table {
@@ -61,12 +132,14 @@
             transform: translate(-50%, -50%);
             width: 600px;
             height: 400px;
-            background: radial-gradient(ellipse, #1a6b1a 0%, #0d4f0d  70%);
+            background: radial-gradient(ellipse, #1a4a3a 0%, #0d2d1d 70%);
             border-radius: 50%;
-            border: 8px solid #8b4513;
+            border: 8px solid #2a3f5f;
             box-shadow: 
-                inset 0 0 50px rgba(0,0,0,0.6),
-                0 0 30px rgba(212, 175, 55, 0.3);
+                inset 0 0 50px rgba(0,0,0,0.7),
+                0 0 40px rgba(136, 146, 176, 0.15),
+                inset 0 0 100px rgba(136, 146, 176, 0.05);
+            position: relative;
         }
 
         .felt-pattern {
@@ -77,39 +150,137 @@
             bottom: 0;
             border-radius: inherit;
             background: 
-                radial-gradient(circle at 30% 30%, rgba(255,255,255,0.05) 0%, transparent 30%),
+                radial-gradient(circle at 30% 30%, rgba(255,255,255,0.03) 0%, transparent 30%),
                 radial-gradient(circle at 70% 70%, rgba(0,0,0,0.1) 0%, transparent 30%);
+        }
+
+        /* Crescent moon watermark on table */
+        .poker-table::after {
+            content: '🌙';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 80px;
+            opacity: 0.05;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Mitsuki Dealer Sprite */
+        .dealer-sprite {
+            position: absolute;
+            top: 25%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            transition: all 0.5s ease;
+        }
+
+        .dealer-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(136, 146, 176, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            z-index: -1;
+        }
+
+        .dealer-sprite.idle #dealer-body {
+            transform: translateY(0px);
+        }
+
+        .dealer-sprite.idle #dealer-left-arm {
+            transform: rotate(-10deg);
+        }
+
+        .dealer-sprite.idle #dealer-right-arm {
+            transform: rotate(10deg);
+        }
+
+        .dealer-sprite.idle #dealer-eyes {
+            opacity: 1;
+        }
+
+        .dealer-sprite.idle #dealer-smile {
+            opacity: 1;
+        }
+
+        .dealer-sprite.dealing #dealer-body {
+            transform: translateY(-2px) translateX(5px);
+        }
+
+        .dealer-sprite.dealing #dealer-left-arm {
+            transform: rotate(-45deg) translateY(-10px);
+        }
+
+        .dealer-sprite.dealing #dealer-right-arm {
+            transform: rotate(10deg);
+        }
+
+        .dealer-sprite.dealing #dealer-eyes {
+            opacity: 1;
+        }
+
+        .dealer-sprite.dealing #dealer-smile {
+            opacity: 0.8;
+        }
+
+        .dealer-sprite.thankyou #dealer-body {
+            transform: translateY(5px);
+        }
+
+        .dealer-sprite.thankyou #dealer-left-arm {
+            transform: rotate(-15deg);
+        }
+
+        .dealer-sprite.thankyou #dealer-right-arm {
+            transform: rotate(15deg);
+        }
+
+        .dealer-sprite.thankyou #dealer-eyes {
+            opacity: 0;
+        }
+
+        .dealer-sprite.thankyou #dealer-smile {
+            opacity: 1;
         }
 
         .community-cards {
             position: absolute;
-            top: 40%;
+            top: 45%;
             left: 50%;
             transform: translate(-50%, -50%);
             display: flex;
             gap: 10px;
+            z-index: 5;
         }
 
         .pot-info {
             position: absolute;
-            top: 60%;
+            top: 65%;
             left: 50%;
             transform: translateX(-50%);
             text-align: center;
             font-size: 1.4em;
-            font-weight: bold;
-            text-shadow: 0 0 10px rgba(212, 175, 55, 0.8);
-            background: rgba(0,0,0,0.6);
-            padding: 10px 20px;
+            font-weight: 500;
+            text-shadow: 0 0 10px rgba(136, 146, 176, 0.8);
+            background: rgba(0,0,0,0.7);
+            padding: 12px 24px;
             border-radius: 20px;
-            border: 2px solid #d4af37;
+            border: 2px solid #8892b0;
+            backdrop-filter: blur(5px);
+            z-index: 5;
         }
 
         .card {
             width: 50px;
             height: 70px;
-            background: #fff;
-            border: 2px solid #333;
+            background: #f8fafc;
+            border: 2px solid #2d3748;
             border-radius: 8px;
             display: flex;
             flex-direction: column;
@@ -129,13 +300,14 @@
         }
 
         .card.back {
-            background: linear-gradient(45deg, #1a1a6b, #2a2a7b);
-            color: #d4af37;
+            background: linear-gradient(45deg, #1a2332, #2d3748);
+            color: #8892b0;
         }
 
         .card.hidden {
-            background: #444;
-            border-color: #666;
+            background: #4a5568;
+            border-color: #718096;
+            opacity: 0.6;
         }
 
         .card .rank {
@@ -148,60 +320,70 @@
         }
 
         .card.red {
-            color: #dc143c;
+            color: #e53e3e;
         }
 
         .card.black {
-            color: #000;
+            color: #2d3748;
         }
 
         .player-seat {
             position: absolute;
             width: 120px;
             height: 100px;
-            background: rgba(0,0,0,0.8);
-            border: 2px solid #d4af37;
+            background: rgba(0,0,0,0.6);
+            border: 2px solid rgba(136, 146, 176, 0.3);
             border-radius: 15px;
             padding: 10px;
             text-align: center;
-            box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+            box-shadow: 0 0 15px rgba(136, 146, 176, 0.2);
             transition: all 0.3s ease;
+            opacity: 0.4;
+            backdrop-filter: blur(3px);
+        }
+
+        .player-seat:not(:empty) {
+            opacity: 1;
+            background: rgba(0,0,0,0.8);
+            border-color: #8892b0;
+            box-shadow: 0 0 20px rgba(136, 146, 176, 0.3);
         }
 
         .player-seat.active {
-            border-color: #ffff00;
-            box-shadow: 0 0 30px rgba(255, 255, 0, 0.6);
+            border-color: #f7fafc;
+            box-shadow: 0 0 30px rgba(247, 250, 252, 0.5);
+            background: rgba(136, 146, 176, 0.1);
         }
 
         .player-seat.folded {
             opacity: 0.5;
-            border-color: #666;
+            border-color: #4a5568;
         }
 
         .player-name {
             font-size: 0.9em;
-            font-weight: bold;
+            font-weight: 500;
             margin-bottom: 5px;
-            color: #d4af37;
+            color: #f8fafc;
         }
 
         .player-stack {
             font-size: 0.8em;
-            color: #90ee90;
+            color: #90cdf4;
             margin-bottom: 3px;
         }
 
         .player-bet {
             font-size: 0.8em;
-            color: #ff6b6b;
-            background: rgba(255, 107, 107, 0.2);
+            color: #fed7d7;
+            background: rgba(245, 101, 101, 0.2);
             padding: 2px 6px;
             border-radius: 10px;
         }
 
         .player-status {
             font-size: 0.7em;
-            color: #ffa500;
+            color: #fbb6ce;
             margin-top: 3px;
         }
 
@@ -223,6 +405,7 @@
             transform: translateX(-50%);
             display: flex;
             gap: 15px;
+            z-index: 10;
         }
 
         .action-buttons {
@@ -234,6 +417,7 @@
             gap: 15px;
             opacity: 0;
             transition: opacity 0.3s ease;
+            z-index: 10;
         }
 
         .action-buttons.visible {
@@ -243,19 +427,21 @@
         .action-btn {
             padding: 12px 24px;
             font-size: 1em;
-            font-weight: bold;
-            border: 2px solid #d4af37;
-            background: rgba(212, 175, 55, 0.2);
-            color: #d4af37;
+            font-weight: 500;
+            border: 2px solid #8892b0;
+            background: rgba(136, 146, 176, 0.1);
+            color: #f8fafc;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
             text-transform: uppercase;
+            backdrop-filter: blur(5px);
         }
 
         .action-btn:hover {
-            background: rgba(212, 175, 55, 0.4);
-            box-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
+            background: rgba(136, 146, 176, 0.2);
+            box-shadow: 0 0 15px rgba(136, 146, 176, 0.4);
+            border-color: #f8fafc;
         }
 
         .action-btn:disabled {
@@ -274,7 +460,9 @@
             background: rgba(0,0,0,0.9);
             padding: 15px;
             border-radius: 10px;
-            border: 2px solid #d4af37;
+            border: 2px solid #8892b0;
+            backdrop-filter: blur(10px);
+            z-index: 10;
         }
 
         .raise-controls.visible {
@@ -284,7 +472,7 @@
         .raise-slider {
             width: 200px;
             height: 6px;
-            background: #333;
+            background: #2d3748;
             border-radius: 3px;
             outline: none;
             -webkit-appearance: none;
@@ -294,85 +482,113 @@
             -webkit-appearance: none;
             width: 20px;
             height: 20px;
-            background: #d4af37;
+            background: #8892b0;
             border-radius: 50%;
             cursor: pointer;
+            box-shadow: 0 0 10px rgba(136, 146, 176, 0.5);
         }
 
         .sidebar {
             width: 350px;
-            background: linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%);
-            border-left: 2px solid #d4af37;
+            background: linear-gradient(180deg, #0d1421 0%, #050810 100%);
+            border-left: 2px solid #8892b0;
             padding: 20px;
             overflow-y: auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at top, rgba(136, 146, 176, 0.05) 0%, transparent 70%);
+            pointer-events: none;
         }
 
         .sidebar h2 {
-            color: #d4af37;
+            color: #f8fafc;
             margin-bottom: 15px;
             text-align: center;
-            text-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
+            text-shadow: 0 0 10px rgba(136, 146, 176, 0.4);
+            font-family: 'Playfair Display', serif;
+            font-weight: 600;
         }
 
         .join-form {
-            background: rgba(212, 175, 55, 0.1);
+            background: rgba(136, 146, 176, 0.05);
             padding: 20px;
             border-radius: 10px;
-            border: 1px solid #d4af37;
+            border: 1px solid #8892b0;
             margin-bottom: 30px;
+            backdrop-filter: blur(5px);
         }
 
         .join-form input, .join-form button {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             margin: 8px 0;
-            border: 1px solid #d4af37;
+            border: 1px solid #8892b0;
             border-radius: 5px;
-            background: rgba(0,0,0,0.7);
-            color: #d4af37;
+            background: rgba(0,0,0,0.6);
+            color: #f8fafc;
             font-size: 1em;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .join-form input::placeholder {
+            color: #8892b0;
         }
 
         .join-form button {
-            background: rgba(212, 175, 55, 0.3);
+            background: rgba(136, 146, 176, 0.2);
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 500;
             transition: all 0.3s ease;
         }
 
         .join-form button:hover {
-            background: rgba(212, 175, 55, 0.5);
+            background: rgba(136, 146, 176, 0.3);
+            box-shadow: 0 0 15px rgba(136, 146, 176, 0.2);
         }
 
         .leaderboard, .hand-history {
-            background: rgba(0,0,0,0.6);
+            background: rgba(0,0,0,0.4);
             border-radius: 10px;
             padding: 15px;
             margin-bottom: 20px;
             max-height: 300px;
             overflow-y: auto;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(136, 146, 176, 0.2);
         }
 
         .leaderboard-entry, .history-entry {
-            padding: 8px;
+            padding: 10px;
             margin: 5px 0;
-            background: rgba(212, 175, 55, 0.1);
+            background: rgba(136, 146, 176, 0.05);
             border-radius: 5px;
             font-size: 0.9em;
+            border: 1px solid rgba(136, 146, 176, 0.1);
         }
 
         .status-message {
             position: fixed;
-            top: 100px;
+            top: 120px;
             right: 20px;
-            padding: 15px;
-            background: rgba(212, 175, 55, 0.9);
-            color: #000;
+            padding: 15px 20px;
+            background: rgba(136, 146, 176, 0.9);
+            color: #0d1421;
             border-radius: 8px;
-            font-weight: bold;
+            font-weight: 500;
             transform: translateX(400px);
             transition: transform 0.3s ease;
             z-index: 1000;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(136, 146, 176, 0.3);
         }
 
         .status-message.visible {
@@ -408,18 +624,122 @@
         .chip-animation {
             animation: chipMove 0.4s ease-out;
         }
+
+        /* Connection status styling */
+        #connectionStatus {
+            text-align: center;
+            margin: 15px 0;
+            font-size: 0.9em;
+            padding: 8px;
+            border-radius: 5px;
+            background: rgba(0,0,0,0.3);
+        }
+
+        #leaveSection button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #e53e3e;
+            border-radius: 5px;
+            background: rgba(245, 101, 101, 0.1);
+            color: #fed7d7;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #leaveSection button:hover {
+            background: rgba(245, 101, 101, 0.2);
+            box-shadow: 0 0 15px rgba(245, 101, 101, 0.2);
+        }
     </style>
 </head>
 <body>
+    <!-- Moon dust particles -->
+    <div class="moon-dust" id="moonDust"></div>
+
     <header class="header">
         <h1>🌙 Mitsuki's Room</h1>
-        <div class="motto">Where Legends Are Born in Shadow</div>
+        <div class="motto">The moon watches. The cards fall.</div>
     </header>
 
     <div class="main-container">
         <div class="game-area">
             <div class="poker-table">
                 <div class="felt-pattern"></div>
+                
+                <!-- Mitsuki Dealer Sprite -->
+                <div class="dealer-sprite idle" id="dealerSprite">
+                    <div class="dealer-glow"></div>
+                    <svg width="140" height="150" viewBox="0 0 140 150" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Background glow -->
+                        <defs>
+                            <radialGradient id="moonGlow" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" style="stop-color:#8892b0;stop-opacity:0.2"/>
+                                <stop offset="100%" style="stop-color:transparent;stop-opacity:0"/>
+                            </radialGradient>
+                            <linearGradient id="hairGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#f8fafc"/>
+                                <stop offset="50%" style="stop-color:#e2e8f0"/>
+                                <stop offset="100%" style="stop-color:#cbd5e0"/>
+                            </linearGradient>
+                            <linearGradient id="outfitGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#2d3748"/>
+                                <stop offset="50%" style="stop-color:#1a202c"/>
+                                <stop offset="100%" style="stop-color:#171923"/>
+                            </linearGradient>
+                        </defs>
+                        
+                        <!-- Body glow -->
+                        <ellipse cx="70" cy="75" rx="60" ry="70" fill="url(#moonGlow)"/>
+                        
+                        <!-- Body -->
+                        <g id="dealer-body" style="transform-origin: 70px 75px; transition: all 0.3s ease;">
+                            <!-- Dress/outfit -->
+                            <path d="M45 80 Q70 85 95 80 L90 130 Q70 135 50 130 Z" fill="url(#outfitGradient)" stroke="#8892b0" stroke-width="1"/>
+                            
+                            <!-- Head -->
+                            <ellipse cx="70" cy="45" rx="18" ry="20" fill="#fef5e7" stroke="#e2e8f0" stroke-width="1"/>
+                            
+                            <!-- Hair -->
+                            <path d="M50 35 Q70 25 90 35 Q90 45 85 55 Q75 50 70 50 Q65 50 55 55 Q50 45 50 35" fill="url(#hairGradient)" stroke="#cbd5e0" stroke-width="1"/>
+                            
+                            <!-- Crescent moon hair clip -->
+                            <path d="M75 32 Q80 28 82 32 Q80 36 75 32" fill="#8892b0" stroke="#f8fafc" stroke-width="1"/>
+                            <circle cx="78" cy="32" r="1.5" fill="#f8fafc"/>
+                            
+                            <!-- Eyes -->
+                            <g id="dealer-eyes" style="transition: opacity 0.3s ease;">
+                                <ellipse cx="65" cy="42" rx="2" ry="3" fill="#2d3748"/>
+                                <ellipse cx="75" cy="42" rx="2" ry="3" fill="#2d3748"/>
+                                <ellipse cx="65" cy="41" rx="0.8" ry="1" fill="#f8fafc"/>
+                                <ellipse cx="75" cy="41" rx="0.8" ry="1" fill="#f8fafc"/>
+                            </g>
+                            
+                            <!-- Smile -->
+                            <path id="dealer-smile" d="M66 48 Q70 52 74 48" stroke="#e53e3e" stroke-width="1.5" fill="none" style="transition: opacity 0.3s ease;"/>
+                            
+                            <!-- Left arm -->
+                            <g id="dealer-left-arm" style="transform-origin: 55px 75px; transition: all 0.3s ease;">
+                                <ellipse cx="50" cy="75" rx="6" ry="15" fill="#fef5e7" stroke="#e2e8f0" stroke-width="1"/>
+                                <ellipse cx="48" cy="85" rx="4" ry="8" fill="#fef5e7" stroke="#e2e8f0" stroke-width="1"/>
+                            </g>
+                            
+                            <!-- Right arm -->
+                            <g id="dealer-right-arm" style="transform-origin: 85px 75px; transition: all 0.3s ease;">
+                                <ellipse cx="90" cy="75" rx="6" ry="15" fill="#fef5e7" stroke="#e2e8f0" stroke-width="1"/>
+                                <ellipse cx="92" cy="85" rx="4" ry="8" fill="#fef5e7" stroke="#e2e8f0" stroke-width="1"/>
+                            </g>
+                            
+                            <!-- Vest details -->
+                            <rect x="60" y="80" width="20" height="30" fill="none" stroke="#8892b0" stroke-width="1"/>
+                            <circle cx="65" cy="90" r="1.5" fill="#8892b0"/>
+                            <circle cx="75" cy="90" r="1.5" fill="#8892b0"/>
+                            <circle cx="70" cy="100" r="1.5" fill="#8892b0"/>
+                        </g>
+                    </svg>
+                </div>
                 
                 <!-- Community Cards -->
                 <div class="community-cards" id="communityCards">
@@ -471,11 +791,11 @@
 
             <!-- Leave Button (hidden initially) -->
             <div id="leaveSection" style="display: none;">
-                <button onclick="leaveGame()" style="background: rgba(220, 20, 60, 0.3); border-color: #dc143c; color: #dc143c;">Leave Game</button>
+                <button onclick="leaveGame()">Leave Game</button>
             </div>
 
             <!-- Connection Status -->
-            <div id="connectionStatus" style="text-align: center; margin: 15px 0; font-size: 0.9em;">
+            <div id="connectionStatus">
                 🔴 Disconnected
             </div>
 
@@ -519,6 +839,7 @@
             loadLeaderboard();
             loadHandHistory();
             initializeWebSocket();
+            createMoonDust();
             
             // Set up raise slider
             const slider = document.getElementById('raiseSlider');
@@ -533,7 +854,77 @@
                     fetchGameState();
                 }
             }, 2000);
+
+            // Animate dealer sprite periodically
+            setInterval(() => {
+                animateDealer();
+            }, 8000);
         });
+
+        // Create floating moon dust particles
+        function createMoonDust() {
+            const dustContainer = document.getElementById('moonDust');
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const particle = document.createElement('div');
+                    particle.className = 'dust-particle';
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.animationDelay = Math.random() * 15 + 's';
+                    particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+                    dustContainer.appendChild(particle);
+                    
+                    // Remove particle after animation
+                    setTimeout(() => {
+                        if (particle.parentNode) {
+                            particle.parentNode.removeChild(particle);
+                        }
+                    }, 25000);
+                }, i * 800);
+            }
+            
+            // Recreate particles periodically
+            setTimeout(createMoonDust, 25000);
+        }
+
+        // Animate dealer sprite based on game state
+        function animateDealer() {
+            const dealer = document.getElementById('dealerSprite');
+            if (!dealer) return;
+            
+            // Random idle animations
+            const animations = ['idle', 'thankyou'];
+            const randomAnimation = animations[Math.floor(Math.random() * animations.length)];
+            
+            dealer.className = `dealer-sprite ${randomAnimation}`;
+            
+            // Return to idle after 2 seconds
+            setTimeout(() => {
+                dealer.className = 'dealer-sprite idle';
+            }, 2000);
+        }
+
+        // Set dealer animation based on game action
+        function setDealerAnimation(action) {
+            const dealer = document.getElementById('dealerSprite');
+            if (!dealer) return;
+            
+            switch (action) {
+                case 'dealing':
+                    dealer.className = 'dealer-sprite dealing';
+                    setTimeout(() => {
+                        dealer.className = 'dealer-sprite idle';
+                    }, 1500);
+                    break;
+                case 'thankyou':
+                    dealer.className = 'dealer-sprite thankyou';
+                    setTimeout(() => {
+                        dealer.className = 'dealer-sprite idle';
+                    }, 2000);
+                    break;
+                default:
+                    dealer.className = 'dealer-sprite idle';
+            }
+        }
 
         // Initialize empty player seats
         function initializeSeats() {
@@ -579,6 +970,7 @@
                     document.getElementById('joinForm').style.display = 'none';
                     document.getElementById('leaveSection').style.display = 'block';
                     
+                    setDealerAnimation('thankyou');
                     showStatus(`Welcome to the table, ${name}! Seat ${data.seat + 1}`, 'success');
                     fetchGameState();
                 } else {
@@ -613,6 +1005,7 @@
             document.getElementById('actionButtons').classList.remove('visible');
             document.getElementById('playerCards').innerHTML = '';
             
+            setDealerAnimation('thankyou');
             showStatus('Left the game', 'info');
         }
 
@@ -661,6 +1054,13 @@
         // Update community cards
         function updateCommunityCards(cards) {
             const container = document.getElementById('communityCards');
+            const currentCards = container.children.length;
+            
+            // Only animate new cards
+            if (cards.length > currentCards) {
+                setDealerAnimation('dealing');
+            }
+            
             container.innerHTML = '';
             
             cards.forEach((card, index) => {
@@ -835,7 +1235,7 @@
                 
                 const container = document.getElementById('leaderboardContent');
                 if (data.length === 0) {
-                    container.innerHTML = '<div style="text-align: center; color: #666;">No players yet</div>';
+                    container.innerHTML = '<div style="text-align: center; color: #8892b0;">No players yet</div>';
                     return;
                 }
 
@@ -848,7 +1248,7 @@
                 `).join('');
             } catch (error) {
                 console.error('Load leaderboard error:', error);
-                document.getElementById('leaderboardContent').innerHTML = '<div style="color: #dc143c;">Failed to load</div>';
+                document.getElementById('leaderboardContent').innerHTML = '<div style="color: #e53e3e;">Failed to load</div>';
             }
         }
 
@@ -860,7 +1260,7 @@
                 
                 const container = document.getElementById('handHistoryContent');
                 if (data.length === 0) {
-                    container.innerHTML = '<div style="text-align: center; color: #666;">No hands played yet</div>';
+                    container.innerHTML = '<div style="text-align: center; color: #8892b0;">No hands played yet</div>';
                     return;
                 }
 
@@ -873,7 +1273,7 @@
                 `).join('');
             } catch (error) {
                 console.error('Load hand history error:', error);
-                document.getElementById('handHistoryContent').innerHTML = '<div style="color: #dc143c;">Failed to load</div>';
+                document.getElementById('handHistoryContent').innerHTML = '<div style="color: #e53e3e;">Failed to load</div>';
             }
         }
 
