@@ -1595,6 +1595,88 @@
             border-left-color: #ef4444;
         }
 
+        /* Mini card inline visuals */
+        .mini-card {
+            display: inline-block;
+            background: #fff;
+            color: #1f2937;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            font-weight: 700;
+            margin: 0 2px;
+            border: 1px solid #e2e8f0;
+            font-family: 'Inter', sans-serif;
+        }
+        .mini-card.red { color: #dc2626; }
+        .mini-card.black { color: #1f2937; }
+
+        /* Unified Table Feed */
+        .table-feed {
+            background: rgba(0,0,0,0.4);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(136, 146, 176, 0.2);
+        }
+
+        .table-feed h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.1em;
+            color: #8892b0;
+            margin-bottom: 10px;
+        }
+
+        .feed-messages {
+            max-height: 350px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        .feed-entry {
+            padding: 6px 10px;
+            margin: 3px 0;
+            border-radius: 5px;
+            font-size: 0.85em;
+            color: #c8d3dc;
+            word-wrap: break-word;
+        }
+
+        .feed-entry.system {
+            color: #6b7280;
+            font-style: italic;
+            font-size: 0.8em;
+        }
+
+        .feed-entry.game-action {
+            background: rgba(136, 146, 176, 0.05);
+            border-left: 3px solid #3182ce;
+        }
+
+        .feed-entry.game-action.action {
+            border-left-color: #10b981;
+        }
+
+        .feed-entry.game-action.win {
+            border-left-color: #fbbf24;
+            background: rgba(251, 191, 36, 0.05);
+        }
+
+        .feed-entry.game-action.fold {
+            border-left-color: #ef4444;
+        }
+
+        .feed-entry.chat-msg {
+            background: transparent;
+        }
+
+        .feed-entry.chat-msg .chat-sender {
+            font-weight: 600;
+            color: #8892b0;
+            margin-right: 6px;
+        }
+
         /* Loading States */
         .loading {
             position: relative;
@@ -1915,19 +1997,11 @@
             <!-- Leave Button (hidden initially, controlled by compact header) -->
             <div id="leaveSection" style="display: none;"></div>
 
-            <!-- Game Log -->
-            <div class="game-log">
-                <h2>📝 Game Log</h2>
-                <div id="gameLogContent">
-                    <div class="log-entry">Waiting for game to start...</div>
-                </div>
-            </div>
-
-            <!-- Chat -->
-            <div class="chat-box">
-                <h2>💬 Chat</h2>
-                <div id="chatMessages" class="chat-messages">
-                    <div class="chat-entry system">Welcome to Mitsuki's Room 🌙</div>
+            <!-- Unified Table Feed -->
+            <div class="table-feed">
+                <h2>💬 Table Feed</h2>
+                <div id="tableFeed" class="feed-messages">
+                    <div class="feed-entry system">Welcome to Mitsuki's Room 🌙</div>
                 </div>
                 <div class="chat-input-area">
                     <input type="text" id="chatInput" placeholder="Type a message..." maxlength="200" autocomplete="off">
@@ -2420,24 +2494,25 @@
         ];
         let _lastMitsukiQuip = '';
 
-        // Update Mitsuki speech bubble
+        // Update Mitsuki speech bubble (merged with phase indicator)
         function updateMitsukiSpeech(state) {
             const bubble = document.getElementById('mitsukiSpeech');
             if (!bubble) return;
 
             const playerCount = (state.players || []).filter(p => p !== null).length;
             const phase = state.phase || 'waiting';
+            const isYourTurn = state.isYourTurn || state.isPlayerTurn;
             let msg = '';
 
             if (playerCount < 2) {
                 msg = 'Waiting for more players...';
             } else {
                 switch (phase) {
-                    case 'preflop': msg = 'Cards in the air! 🃏'; break;
-                    case 'flop': msg = 'The flop is out.'; break;
-                    case 'turn': msg = 'Fourth street.'; break;
-                    case 'river': msg = 'Last card.'; break;
-                    case 'showdown': msg = 'And the winner is...'; break;
+                    case 'preflop': msg = '● Pre-Flop — Cards in the air! 🃏'; break;
+                    case 'flop': msg = '●● Flop — The flop is out.'; break;
+                    case 'turn': msg = '●●● Turn — Fourth street.'; break;
+                    case 'river': msg = '●●●● River — Last card.'; break;
+                    case 'showdown': msg = '🏆 Showdown — And the winner is...'; break;
                     default:
                         // Random idle quip
                         if (Math.random() < 0.3 || !_lastMitsukiQuip) {
@@ -2447,6 +2522,15 @@
                             msg = _lastMitsukiQuip;
                         }
                 }
+            }
+
+            if (isYourTurn && phase !== 'waiting') {
+                msg += ' — YOUR TURN';
+                bubble.style.borderColor = 'rgba(96, 165, 250, 0.5)';
+                bubble.style.color = '#60a5fa';
+            } else {
+                bubble.style.borderColor = 'rgba(136, 146, 176, 0.25)';
+                bubble.style.color = '#c8d3dc';
             }
 
             bubble.textContent = msg;
@@ -2550,36 +2634,11 @@
             }
         }
 
-        // Show current game phase on the table
+        // Phase indicator is now merged into updateMitsukiSpeech
         function updatePhaseIndicator(state) {
-            let indicator = document.getElementById('phaseIndicator');
-            if (!indicator) {
-                indicator = document.createElement('div');
-                indicator.id = 'phaseIndicator';
-                indicator.style.cssText = 'position:absolute;top:12px;left:50%;transform:translateX(-50%);font-size:0.85em;font-weight:600;color:#8892b0;text-transform:uppercase;letter-spacing:2px;z-index:6;text-shadow:0 0 10px rgba(136,146,176,0.5);';
-                document.querySelector('.poker-table').appendChild(indicator);
-            }
-            
-            const phase = state.phase || 'waiting';
-            const phaseLabels = {
-                waiting: '',
-                preflop: '● Pre-Flop',
-                flop: '●● Flop',
-                turn: '●●● Turn',
-                river: '●●●● River',
-                showdown: '🏆 Showdown'
-            };
-            
-            const isYourTurn = state.isYourTurn || state.isPlayerTurn;
-            if (isYourTurn) {
-                indicator.style.color = '#60a5fa';
-                indicator.textContent = (phaseLabels[phase] || phase) + ' — YOUR TURN';
-            } else if (phase === 'waiting') {
-                indicator.textContent = '';
-            } else {
-                indicator.style.color = '#8892b0';
-                indicator.textContent = phaseLabels[phase] || phase;
-            }
+            // Remove legacy phase indicator if it exists
+            const old = document.getElementById('phaseIndicator');
+            if (old) old.remove();
         }
 
         // Update empty state — only show when zero players are seated
@@ -2925,59 +2984,91 @@
             }
         }
 
-        // Add game log entry
+        // Mini card helper for inline card visuals
+        function miniCard(card) {
+            if (!card) return '';
+            const rank = card.rank || card.charAt(0);
+            const suit = card.suit || card.charAt(card.length - 1);
+            const isRed = suit === '♥' || suit === '♦' || suit === 'h' || suit === 'd';
+            const suitSymbol = { 'h': '♥', 'd': '♦', 'c': '♣', 's': '♠' }[suit] || suit;
+            return `<span class="mini-card ${isRed ? 'red' : 'black'}">${rank}${suitSymbol}</span>`;
+        }
+
+        // Render an array of cards as mini card HTML
+        function miniCards(cards) {
+            if (!cards || !cards.length) return '';
+            return cards.map(c => miniCard(c)).join('');
+        }
+
+        // Add game log entry (appends to unified table feed)
         function addGameLogEntry(action) {
-            const logContent = document.getElementById('gameLogContent');
+            const feed = document.getElementById('tableFeed');
+            if (!feed) return;
             const entry = document.createElement('div');
             
-            let className = 'log-entry';
+            let typeClass = '';
             let message = '';
+            let cardHtml = '';
             
             switch (action.type) {
                 case 'fold':
-                    className += ' fold';
+                    typeClass = 'fold';
                     message = `${action.player} folded`;
                     break;
                 case 'call':
-                    className += ' action';
+                    typeClass = 'action';
                     message = `${action.player} called $${action.amount}`;
                     break;
                 case 'raise':
-                    className += ' action';
+                    typeClass = 'action';
                     message = `${action.player} raised to $${action.amount}`;
                     break;
                 case 'check':
-                    className += ' action';
+                    typeClass = 'action';
                     message = `${action.player} checked`;
                     break;
                 case 'win':
-                    className += ' win';
-                    message = `🎉 ${action.player} wins $${action.amount}${action.hand ? ` with ${action.hand}` : ''}!`;
+                    typeClass = 'win';
+                    message = `🎉 ${action.player} wins $${action.amount}${action.hand ? ` with ${action.hand}` : ''}`;
+                    if (action.cards) cardHtml = ' ' + miniCards(action.cards);
                     break;
                 case 'join':
-                    className += ' action';
+                    typeClass = 'action';
                     message = `${action.player} joined the table`;
                     break;
                 case 'leave':
-                    className += ' action';
+                    typeClass = 'action';
                     message = `${action.player} left the table`;
                     break;
                 default:
                     message = action.message || 'Unknown action';
             }
             
-            entry.className = className;
-            entry.textContent = message;
+            entry.className = `feed-entry game-action ${typeClass}`;
+            entry.innerHTML = message + cardHtml;
             
-            logContent.appendChild(entry);
+            feed.appendChild(entry);
             
-            // Keep only last 10 entries
-            while (logContent.children.length > 10) {
-                logContent.removeChild(logContent.firstChild);
+            // Also mirror to left panel
+            const leftPanel = document.getElementById('chatMessagesLeft');
+            if (leftPanel) {
+                const leftEntry = document.createElement('div');
+                leftEntry.className = 'chat-entry';
+                leftEntry.style.color = '#8892b0';
+                leftEntry.style.fontStyle = 'italic';
+                leftEntry.style.fontSize = '0.8em';
+                leftEntry.innerHTML = message + cardHtml;
+                leftPanel.appendChild(leftEntry);
+                leftPanel.scrollTop = leftPanel.scrollHeight;
+            }
+            
+            // Keep only last 50 entries in feed
+            while (feed.children.length > 50) {
+                feed.removeChild(feed.firstChild);
             }
             
             // Auto-scroll to bottom
-            logContent.scrollTop = logContent.scrollHeight;
+            feed.scrollTop = feed.scrollHeight;
         }
 
         // Confirm raise action
@@ -3091,11 +3182,18 @@
                     hideRaiseControls();
                     showStatus(`Action: ${action.toUpperCase()}${amount ? ` $${amount}` : ''}`, 'success');
                     
-                    // Add to game log
+                    // Add to game log — fix null amount for calls
+                    let logAmount = amount;
+                    if (!logAmount && (action === 'call' || action === 'check')) {
+                        // Parse the call amount from the button text
+                        const btnText = document.getElementById('checkCallBtn').textContent || '';
+                        const parsed = btnText.match(/\$(\d+)/);
+                        logAmount = parsed ? parseInt(parsed[1]) : 0;
+                    }
                     const logAction = {
                         type: action,
                         player: 'You',
-                        amount: amount
+                        amount: logAmount
                     };
                     addGameLogEntry(logAction);
                     
@@ -3257,12 +3355,16 @@
         }
 
         function addChatMessage(sender, text) {
-            // Add to BOTH chat panels (left panel + sidebar)
-            ['chatMessages', 'chatMessagesLeft'].forEach(containerId => {
+            // Add to unified table feed (sidebar) AND left panel
+            ['tableFeed', 'chatMessagesLeft'].forEach(containerId => {
                 const container = document.getElementById(containerId);
                 if (!container) return;
                 const entry = document.createElement('div');
-                entry.className = 'chat-entry';
+                if (containerId === 'tableFeed') {
+                    entry.className = 'feed-entry chat-msg';
+                } else {
+                    entry.className = 'chat-entry';
+                }
                 entry.innerHTML = `<span class="chat-sender">${sender}:</span> ${text}`;
                 container.appendChild(entry);
                 container.scrollTop = container.scrollHeight;
