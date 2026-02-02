@@ -5184,20 +5184,30 @@
         }
 
         // Load current tournament status
-        async function loadTournamentStatus() {
-            try {
-                const response = await fetch(`${API_BASE}/api/tournament/status`);
-                const data = await response.json();
-                
-                if (data.tournament) {
-                    updateTournamentDisplay(data.tournament);
-                } else {
-                    // No active tournament
-                    updateTournamentDisplay(null);
+        async function loadTournamentStatus(retries = 3) {
+            for (let attempt = 1; attempt <= retries; attempt++) {
+                try {
+                    const response = await fetch(`${API_BASE}/api/tournament/status`);
+                    const data = await response.json();
+                    
+                    if (data.tournament) {
+                        updateTournamentDisplay(data.tournament);
+                    } else {
+                        // No active tournament
+                        updateTournamentDisplay(null);
+                    }
+                    return; // Success - exit
+                } catch (error) {
+                    console.error(`Error loading tournament status (attempt ${attempt}/${retries}):`, error);
+                    if (attempt < retries) {
+                        // Wait before retry (exponential backoff: 1s, 2s, 4s)
+                        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt - 1)));
+                    } else {
+                        showStatus('Failed to load tournament status — retrying...', 'error');
+                        // Auto-retry after 5s even after all attempts fail
+                        setTimeout(() => loadTournamentStatus(2), 5000);
+                    }
                 }
-            } catch (error) {
-                console.error('Error loading tournament status:', error);
-                showStatus('Failed to load tournament status', 'error');
             }
         }
 
