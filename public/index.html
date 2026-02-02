@@ -743,15 +743,15 @@
 
         .raise-controls {
             position: absolute;
-            bottom: 230px;
+            bottom: 70px;
             left: 50%;
             transform: translateX(-50%);
             display: none;
-            align-items: center;
-            gap: 15px;
+            flex-direction: column;
+            gap: 10px;
             background: rgba(0,0,0,0.95);
-            padding: 20px 25px;
-            border-radius: 15px;
+            padding: 15px 20px;
+            border-radius: 12px;
             border: 2px solid #3182ce;
             backdrop-filter: blur(15px);
             z-index: 11;
@@ -762,6 +762,46 @@
             display: flex;
         }
 
+        .raise-presets {
+            display: flex;
+            gap: 8px;
+        }
+
+        .raise-preset-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background: rgba(136, 146, 176, 0.15);
+            border: 1px solid rgba(136, 146, 176, 0.3);
+            border-radius: 8px;
+            color: #c8d3dc;
+            font-weight: 600;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .raise-preset-btn:hover {
+            background: rgba(49, 130, 206, 0.3);
+            border-color: #3182ce;
+            color: #60a5fa;
+        }
+
+        .raise-preset-btn.allin {
+            background: rgba(251, 191, 36, 0.15);
+            border-color: rgba(251, 191, 36, 0.4);
+            color: #fbbf24;
+        }
+
+        .raise-preset-btn.allin:hover {
+            background: rgba(251, 191, 36, 0.3);
+        }
+
+        .raise-input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         .raise-label {
             color: #60a5fa;
             font-weight: 600;
@@ -769,54 +809,27 @@
             white-space: nowrap;
         }
 
-        .slider-container {
-            position: relative;
-            flex: 1;
-            min-width: 200px;
-        }
-
-        .raise-slider {
-            width: 100%;
-            height: 8px;
-            background: linear-gradient(90deg, #1f2937, #374151);
-            border-radius: 4px;
-            outline: none;
-            -webkit-appearance: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .raise-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 24px;
-            height: 24px;
-            background: linear-gradient(135deg, #3182ce, #1e40af);
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 0 15px rgba(49, 130, 206, 0.6), 0 2px 8px rgba(0,0,0,0.4);
-            transition: all 0.2s ease;
-        }
-
-        .raise-slider::-webkit-slider-thumb:hover {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            box-shadow: 0 0 20px rgba(37, 99, 235, 0.8), 0 4px 12px rgba(0,0,0,0.6);
-            transform: scale(1.1);
-        }
-
-        .raise-amount {
+        .raise-input {
+            width: 80px;
+            padding: 8px 10px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid #3182ce;
+            border-radius: 6px;
             color: #fbbf24;
             font-weight: 700;
-            font-size: 1.1em;
-            min-width: 70px;
+            font-size: 1em;
             text-align: center;
-            background: rgba(251, 191, 36, 0.1);
-            padding: 4px 8px;
-            border-radius: 6px;
-            border: 1px solid rgba(251, 191, 36, 0.3);
+            outline: none;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .raise-input:focus {
+            border-color: #60a5fa;
+            box-shadow: 0 0 10px rgba(96, 165, 250, 0.3);
         }
 
         .raise-controls .action-btn {
-            padding: 10px 20px;
+            padding: 8px 16px;
             font-size: 0.9em;
             min-width: auto;
         }
@@ -1832,13 +1845,18 @@
 
             <!-- Raise Controls -->
             <div class="raise-controls" id="raiseControls">
-                <div class="raise-label">Raise to:</div>
-                <div class="slider-container">
-                    <input type="range" class="raise-slider" id="raiseSlider" min="0" max="1000" value="100">
+                <div class="raise-presets">
+                    <button class="raise-preset-btn" onclick="setRaisePreset(0.25)">25%</button>
+                    <button class="raise-preset-btn" onclick="setRaisePreset(0.50)">50%</button>
+                    <button class="raise-preset-btn" onclick="setRaisePreset(1.0)">Pot</button>
+                    <button class="raise-preset-btn allin" onclick="setRaiseAllIn()">All In</button>
                 </div>
-                <div class="raise-amount">$<span id="raiseAmount">100</span></div>
-                <button class="action-btn raise" onclick="confirmRaise()">Confirm</button>
-                <button class="action-btn" onclick="hideRaiseControls()" style="background: #6b7280;">Cancel</button>
+                <div class="raise-input-row">
+                    <div class="raise-label">Raise to: $</div>
+                    <input type="number" class="raise-input" id="raiseInput" min="0" max="1000" value="4">
+                    <button class="action-btn raise" onclick="confirmRaise()">Raise</button>
+                    <button class="action-btn" onclick="hideRaiseControls()" style="background: #6b7280;">✕</button>
+                </div>
             </div>
         </div>
 
@@ -2113,12 +2131,13 @@
                 }
             });
 
-            // Set up raise slider
-            const slider = document.getElementById('raiseSlider');
-            const amountDisplay = document.getElementById('raiseAmount');
-            slider.addEventListener('input', function() {
-                amountDisplay.textContent = slider.value;
-            });
+            // Raise input: Enter key to confirm
+            const raiseInput = document.getElementById('raiseInput');
+            if (raiseInput) {
+                raiseInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') confirmRaise();
+                });
+            }
 
             // Poll game state every 2 seconds if player is in game
             setInterval(() => {
@@ -2885,18 +2904,21 @@
                     allinBtn.style.display = 'none';
                 }
                 
-                // Update raise slider limits
-                // Minimum raise TO = current bet + min raise increment
-                const slider = document.getElementById('raiseSlider');
+                // Update raise input limits
                 const currentBet = state.currentBet || 0;
                 const minRaiseIncrement = state.minRaise || 2;
                 const minRaise = currentBet + minRaiseIncrement;
                 const maxRaise = playerStack ? currentBet + playerStack : 1000;
                 
-                slider.min = minRaise;
-                slider.max = maxRaise;
-                slider.value = minRaise;
-                document.getElementById('raiseAmount').textContent = minRaise;
+                const raiseInput = document.getElementById('raiseInput');
+                raiseInput.min = minRaise;
+                raiseInput.max = maxRaise;
+                raiseInput.value = minRaise;
+                raiseInput.placeholder = minRaise;
+                
+                // Track for preset buttons
+                _currentMinRaise = minRaise;
+                _currentMaxRaise = maxRaise;
             } else {
                 buttonsContainer.classList.remove('visible');
                 hideRaiseControls();
@@ -2960,9 +2982,30 @@
 
         // Confirm raise action
         function confirmRaise() {
-            const amount = parseInt(document.getElementById('raiseAmount').textContent);
+            const amount = parseInt(document.getElementById('raiseInput').value);
+            if (isNaN(amount) || amount <= 0) {
+                showStatus('Enter a valid raise amount', 'error');
+                return;
+            }
             performAction('raise', amount);
+            hideRaiseControls();
         }
+
+        // Raise presets — percentage of pot
+        function setRaisePreset(pctOfPot) {
+            const potText = document.querySelector('.pot-main').textContent;
+            const pot = parseInt(potText.replace(/[^0-9]/g, '')) || 0;
+            const raiseAmount = Math.max(Math.ceil(pot * pctOfPot), _currentMinRaise || 4);
+            document.getElementById('raiseInput').value = raiseAmount;
+        }
+
+        function setRaiseAllIn() {
+            document.getElementById('raiseInput').value = _currentMaxRaise || 100;
+        }
+
+        // Track min/max for presets
+        let _currentMinRaise = 4;
+        let _currentMaxRaise = 100;
 
         // Create a card element
         function createCardElement(card, isHidden = false, isLarge = false) {
