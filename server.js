@@ -159,6 +159,21 @@ wss.on('connection', (ws, req) => {
         const result = table.handleAction(token, msg.action, msg.amount || 0);
         ws.send(JSON.stringify({ type: 'action_result', ...result }));
       }
+      // Chat messages
+      if (msg.type === 'chat' && msg.text) {
+        const player = table.players.find(p => p && p.token === token);
+        const playerName = player ? player.name : 'Spectator';
+        const chatMsg = {
+          type: 'chat',
+          sender: playerName,
+          text: msg.text.slice(0, 200), // limit length
+          timestamp: Date.now()
+        };
+        // Broadcast to all connected clients
+        if (table.broadcast) {
+          table.broadcast(chatMsg);
+        }
+      }
     } catch (e) {
       ws.send(JSON.stringify({ error: 'Invalid message format' }));
     }

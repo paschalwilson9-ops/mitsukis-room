@@ -1007,6 +1007,89 @@
 
         .log-entry.win {
             border-left-color: #fbbf24;
+        }
+
+        /* Chat Box */
+        .chat-box {
+            background: rgba(0,0,0,0.4);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(136, 146, 176, 0.2);
+        }
+
+        .chat-box h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.1em;
+            color: #8892b0;
+            margin-bottom: 10px;
+        }
+
+        .chat-messages {
+            max-height: 180px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        .chat-entry {
+            padding: 6px 10px;
+            margin: 3px 0;
+            border-radius: 5px;
+            font-size: 0.85em;
+            color: #c8d3dc;
+            word-wrap: break-word;
+        }
+
+        .chat-entry .chat-sender {
+            font-weight: 600;
+            color: #8892b0;
+            margin-right: 6px;
+        }
+
+        .chat-entry.system {
+            color: #6b7280;
+            font-style: italic;
+            font-size: 0.8em;
+        }
+
+        .chat-input-area {
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-input-area input {
+            flex: 1;
+            background: rgba(136, 146, 176, 0.1);
+            border: 1px solid rgba(136, 146, 176, 0.3);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85em;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .chat-input-area input:focus {
+            border-color: #8892b0;
+        }
+
+        .chat-input-area button {
+            background: rgba(136, 146, 176, 0.2);
+            border: 1px solid rgba(136, 146, 176, 0.3);
+            border-radius: 6px;
+            padding: 8px 16px;
+            color: #8892b0;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chat-input-area button:hover {
+            background: rgba(136, 146, 176, 0.3);
+            color: #e2e8f0;
             background: rgba(251, 191, 36, 0.1);
         }
 
@@ -1275,6 +1358,18 @@
                 </div>
             </div>
 
+            <!-- Chat -->
+            <div class="chat-box">
+                <h2>💬 Chat</h2>
+                <div id="chatMessages" class="chat-messages">
+                    <div class="chat-entry system">Welcome to Mitsuki's Room 🌙</div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" id="chatInput" placeholder="Type a message..." maxlength="200" autocomplete="off">
+                    <button id="chatSendBtn" onclick="sendChat()">Send</button>
+                </div>
+            </div>
+
             <!-- Leaderboard -->
             <div class="leaderboard">
                 <h2>🏆 Leaderboard</h2>
@@ -1317,6 +1412,11 @@
             initializeWebSocket();
             createMoonDust();
             
+            // Chat enter key
+            document.getElementById('chatInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') sendChat();
+            });
+
             // Set up raise slider
             const slider = document.getElementById('raiseSlider');
             const amountDisplay = document.getElementById('raiseAmount');
@@ -2137,6 +2237,32 @@
                 if (data.action.type === 'win') {
                     playSound('winSound');
                 }
+            } else if (data.type === 'chat') {
+                addChatMessage(data.sender, data.text);
+            }
+        }
+
+        // Chat functions
+        function sendChat() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text || !gameState.socket || gameState.socket.readyState !== 1) return;
+            
+            gameState.socket.send(JSON.stringify({ type: 'chat', text: text }));
+            input.value = '';
+        }
+
+        function addChatMessage(sender, text) {
+            const container = document.getElementById('chatMessages');
+            const entry = document.createElement('div');
+            entry.className = 'chat-entry';
+            entry.innerHTML = `<span class="chat-sender">${sender}:</span> ${text}`;
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+            
+            // Keep max 50 messages
+            while (container.children.length > 50) {
+                container.removeChild(container.firstChild);
             }
         }
 
