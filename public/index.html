@@ -2886,9 +2886,12 @@
                 }
                 
                 // Update raise slider limits
+                // Minimum raise TO = current bet + min raise increment
                 const slider = document.getElementById('raiseSlider');
-                const minRaise = state.minRaise || (state.currentBet || 0) + (state.minRaise || 20);
-                const maxRaise = playerStack ? (state.currentBet || 0) + playerStack : 1000;
+                const currentBet = state.currentBet || 0;
+                const minRaiseIncrement = state.minRaise || 2;
+                const minRaise = currentBet + minRaiseIncrement;
+                const maxRaise = playerStack ? currentBet + playerStack : 1000;
                 
                 slider.min = minRaise;
                 slider.max = maxRaise;
