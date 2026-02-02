@@ -167,16 +167,16 @@
             z-index: 1;
         }
 
-        /* Mitsuki Dealer Sprite - fixed position bottom-left like a streamer cam */
+        /* Mitsuki Dealer Sprite - center table, above the cards */
         .dealer-sprite {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            z-index: 100;
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 4;
             transition: all 0.5s ease;
-            width: 130px;
-            height: 130px;
-            opacity: 0.9;
+            width: 140px;
+            height: 140px;
             filter: drop-shadow(0 0 10px rgba(136, 146, 176, 0.3));
         }
 
@@ -232,7 +232,7 @@
 
         .community-cards {
             position: absolute;
-            top: 45%;
+            top: 55%;
             left: 50%;
             transform: translate(-50%, -50%);
             display: flex;
