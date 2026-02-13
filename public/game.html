@@ -1,0 +1,2752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game of Hierarchy — Strategy Visualizer</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a0f; color: #e0e0e0; font-family: 'JetBrains Mono', 'Fira Code', monospace; overflow-x: hidden; }
+.container { max-width: 1400px; margin: 0 auto; padding: 15px; }
+h1 { text-align: center; font-size: 1.6em; margin-bottom: 3px; background: linear-gradient(90deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.subtitle { text-align: center; color: #666; font-size: 0.75em; margin-bottom: 15px; }
+.controls { display: flex; gap: 8px; justify-content: center; margin-bottom: 15px; flex-wrap: wrap; }
+.controls button { background: #1a1a2e; border: 1px solid #333; color: #e0e0e0; padding: 7px 18px; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 0.8em; transition: all 0.2s; }
+.controls button:hover { background: #16213e; border-color: #4d96ff; }
+.controls button.active { background: #4d96ff; color: #fff; }
+.status { text-align: center; margin-bottom: 12px; font-size: 1em; min-height: 28px; }
+.phase-badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 0.7em; font-weight: bold; }
+.phase-rating { background: #2d1f5e; color: #a78bfa; }
+.phase-auction { background: #5e1f1f; color: #fca5a5; }
+.seats-area { display: flex; justify-content: center; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+.seat { width: 105px; min-height: 100px; background: #111122; border: 2px solid #222; border-radius: 10px; text-align: center; padding: 6px 4px; transition: all 0.4s; position: relative; }
+.seat.occupied { border-color: #4d96ff; background: #0d1b2a; }
+.seat.collision { border-color: #ff6b6b; background: #1a0a0a; animation: shake 0.3s; }
+.seat.king { border-color: #ffd93d; background: #1a1a0a; box-shadow: 0 0 12px rgba(255,217,61,0.2); }
+.seat-num { font-size: 0.65em; color: #555; }
+.seat-score { font-size: 0.6em; color: #4d96ff; }
+.seat-fortress { font-size: 0.55em; color: #fd79a8; margin-top: 2px; }
+.seat-player { font-size: 0.75em; font-weight: bold; margin-top: 3px; min-height: 18px; }
+.seat-bid { font-size: 0.55em; color: #888; margin-top: 1px; }
+.charts-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
+.chart-panel { background: #0d0d18; border: 1px solid #1a1a2e; border-radius: 10px; padding: 10px; }
+.chart-title { font-size: 0.75em; color: #888; margin-bottom: 6px; }
+.chart-panel canvas { width: 100%; height: auto; display: block; }
+.players-grid { display: flex; flex-direction: column; gap: 2px; }
+.game-layout { display: flex; gap: 8px; }
+.game-main { flex: 1; min-width: 0; }
+.game-sidebar { width: 180px; flex-shrink: 0; position: sticky; top: 5px; max-height: 98vh; overflow-y: auto; }
+.player-card { background: #111122; border: 1px solid #222; border-radius: 4px; padding: 3px 5px; transition: all 0.3s; font-size: 0.75em; line-height: 1.3; }
+.player-card.winner { border-color: #ffd93d; background: #1a1a0a; box-shadow: 0 0 20px rgba(255,217,61,0.3); }
+.player-card.blocked { opacity: 0.35; }
+.player-name { font-weight: bold; font-size: 0.8em; margin-bottom: 3px; }
+.player-strat { font-size: 0.6em; color: #888; }
+.player-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-top: 4px; font-size: 0.65em; }
+.stat { display: flex; justify-content: space-between; }
+.stat-label { color: #666; }
+.stat-val { font-weight: bold; }
+.stat-val.chips { color: #ffd93d; }
+.stat-val.rep { color: #6bcb77; }
+.stat-val.score { color: #4d96ff; }
+.stat-val.seats { color: #fd79a8; }
+.player-bar { height: 3px; background: #222; border-radius: 2px; margin-top: 4px; overflow: hidden; }
+.player-bar-fill { height: 100%; transition: width 0.5s; border-radius: 2px; }
+.win-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center; }
+.win-overlay.show { display: flex; }
+.win-box { background: #111; border: 2px solid #ffd93d; border-radius: 16px; padding: 35px; text-align: center; max-width: 500px; }
+.win-type { font-size: 1.8em; margin-bottom: 8px; }
+.win-player { font-size: 1.3em; color: #ffd93d; margin-bottom: 5px; }
+.win-detail { color: #888; font-size: 0.85em; }
+.log { background: #0d0d15; border: 1px solid #1a1a2e; border-radius: 8px; padding: 8px; max-height: 180px; overflow-y: auto; font-size: 0.65em; line-height: 1.5; }
+.log-entry { border-bottom: 1px solid #111; padding: 1px 0; }
+.log-hr { color: #ffd93d; }
+.log-collision { color: #ff6b6b; }
+.log-win { color: #6bcb77; }
+.log-alliance { color: #a78bfa; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+@media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>⚔️ GAME OF HIERARCHY ⚔️</h1>
+  <p class="subtitle" id="subtitle">11 players • 10 seats • 7 win conditions • true musical chairs</p>
+  <div class="controls">
+    <button onclick="newGame()">🎲 New Game</button>
+    <button onclick="step()">⏭️ Next Round</button>
+    <button id="btn-auto" onclick="toggleAuto()">▶️ Auto Play</button>
+    <button onclick="fastForward()">⏩ Fast Forward</button>
+    <select id="speed" onchange="updateSpeed()" style="background:#1a1a2e;border:1px solid #333;color:#e0e0e0;padding:5px;border-radius:6px;font-family:inherit;">
+      <option value="800">Slow</option>
+      <option value="400" selected>Normal</option>
+      <option value="150">Fast</option>
+      <option value="50">Turbo</option>
+    </select>
+  </div>
+  <div class="status" id="status">Press 🎲 New Game to start</div>
+  <div class="game-layout">
+  <div class="game-main">
+  <div class="seats-area" id="seats"></div>
+  <div style="margin:10px auto;max-width:1100px;">
+    <canvas id="bid-arena" width="1100" height="320" style="width:100%;background:rgba(10,10,30,0.6);border-radius:12px;border:1px solid #222;"></canvas>
+  </div>
+  <div class="charts-row">
+    <div class="chart-panel"><h3 class="chart-title">🌟 10★ Network</h3><canvas id="chart-network" width="360" height="260"></canvas></div>
+    <div class="chart-panel"><h3 class="chart-title">📊 Live Stats</h3><div id="stats-ticker" style="font-family:monospace;font-size:11px;color:#ccc;padding:4px;line-height:1.7;height:250px;overflow-y:auto;"></div></div>
+    <div class="chart-panel"><h3 class="chart-title">⭐ Rep Leaderboard</h3><canvas id="chart-rep" width="360" height="260"></canvas></div>
+    <div class="chart-panel"><h3 class="chart-title">🎯 Unique Seats (→ Bingo)</h3><canvas id="chart-bingo" width="360" height="260"></canvas></div>
+    <div class="chart-panel"><h3 class="chart-title">📈 Rep Market</h3><canvas id="chart-repmarket" width="400" height="260"></canvas></div>
+    <div class="chart-panel"><h3 class="chart-title">💰 Player Chips</h3><canvas id="chart-chips" width="360" height="260"></canvas></div>
+  </div>
+  <!-- Share Economy Row: Ownership + Portfolio side by side -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px;">
+    <div class="chart-panel"><h3 class="chart-title">🏛️ Who Owns You</h3><canvas id="chart-shares" width="500" height="280"></canvas></div>
+    <div class="chart-panel"><h3 class="chart-title">💼 What You Own</h3><canvas id="chart-portfolios" width="500" height="280"></canvas></div>
+  </div>
+  <div class="charts-row">
+    <div class="chart-panel"><h3 class="chart-title">📊 Share Prices</h3><canvas id="chart-shareprices" width="360" height="260"></canvas></div>
+    <div class="chart-panel"><h3 class="chart-title">🪑 Chair Points</h3><canvas id="chart-chairpoints" width="360" height="260"></canvas></div>
+    <div class="chart-panel"><h3 class="chart-title">🎯 Betting Stats</h3><div id="betting-stats" style="font-family:monospace;font-size:10px;color:#ccc;padding:4px;height:250px;overflow-y:auto;line-height:1.6;"></div></div>
+  </div>
+  <div id="winner-panel" class="chart-panel" style="display:none;margin-bottom:15px;border:2px solid #ffd700;"></div>
+  <h3 style="margin-bottom:6px;font-size:0.8em;color:#666;">📜 Game Log</h3>
+  <div class="log" id="log"></div>
+  </div><!-- end game-main -->
+  <div class="game-sidebar">
+    <h3 style="font-size:0.75em;color:#888;margin:0 0 6px 0;">👥 Players</h3>
+    <div class="players-grid" id="players"></div>
+  </div>
+  </div><!-- end game-layout -->
+</div>
+<div class="win-overlay" id="win-overlay" onclick="this.classList.remove('show')">
+  <div class="win-box">
+    <div class="win-type" id="win-type"></div>
+    <div class="win-player" id="win-player"></div>
+    <div class="win-detail" id="win-detail"></div>
+    <p style="margin-top:12px;color:#555;font-size:0.75em;">click anywhere to close</p>
+  </div>
+</div>
+
+<script>
+// === CURRENT GAME RULES: 11p/10s/100r ===
+const N_PLAYERS = 12, N_SEATS = 10, N_ROUNDS = 300;
+const DYNASTY = 8;          // consecutive kings
+const REP_WIN = 8.5;        // 3×own + 2 ratings / 5 — functionally requires 8/10+ ownership
+const CHAIR_SCORE_WIN = 1500; // instant win
+const HR_MULT = 13;
+// Bank removed — pure P2P economy with paydays
+
+const STRATS = [
+  'sharkbait','fu_sharkbait','bouncer','brawler','shark','merchant',
+  'cartel_a','cartel_b','outsider_a','outsider_b',
+  'diplomat_a','diplomat_b','diplomat_c','drifter','ghost','shadow','sleeper','settler','raider','daytrader','vulture',
+  'kingslayer','regulator','arbiter','punk','thug','snitch','grifter','phantom','collector','apex','stalker','newmoon'
+];
+const STRAT_NAMES = {
+  sharkbait:'🪤 Sharkbait', fu_sharkbait:'🖕 FU Shark', bouncer:'🚪 Bouncer',
+  brawler:'👊 Brawler', shark:'🦈 Shark', merchant:'💰 Merchant',
+  cartel_a:'🤝 Cartel A', cartel_b:'🤝 Cartel B', outsider_a:'🔗 Outside A',
+  outsider_b:'🔗 Outside B', diplomat_a:'🕊️ Diplo A', diplomat_b:'🕊️ Diplo B',
+  diplomat_c:'🕊️ Diplo C', drifter:'🎲 Drifter', ghost:'👻 Ghost', shadow:'🕶️ Shadow',
+  sleeper:'😴 Sleeper', settler:'🏕️ Settler', raider:'🦅 Raider', daytrader:'📈 Day Trader', vulture:'🦅 Vulture',
+  kingslayer:'🗡️ Kingslayer', regulator:'🏛️ Regulator', arbiter:'⚖️ Arbiter',
+  punk:'🎸 Punk', thug:'👊 Thug', snitch:'🐀 Snitch', grifter:'🃏 Grifter', phantom:'👤 Phantom', collector:'💎 Collector', apex:'🐉 Apex', stalker:'🔍 Stalker', newmoon:'🌑 New Moon'
+};
+const STRAT_COLORS = {
+  sharkbait:'#ff6b6b', fu_sharkbait:'#ff4757', bouncer:'#4d96ff',
+  brawler:'#ff9f43', shark:'#ee5a24', merchant:'#ffd93d',
+  cartel_a:'#a78bfa', cartel_b:'#8b5cf6', outsider_a:'#6bcb77',
+  outsider_b:'#2ed573', diplomat_a:'#74b9ff', diplomat_b:'#0984e3',
+  diplomat_c:'#48dbfb', drifter:'#dfe6e9', ghost:'#b8b5ff', shadow:'#2d3436',
+  sleeper:'#636e72', settler:'#fdcb6e', raider:'#d63031', daytrader:'#00b894', vulture:'#6c5ce7',
+  kingslayer:'#c0392b', regulator:'#2c3e50', arbiter:'#f39c12',
+  punk:'#e84393', thug:'#d35400', snitch:'#7f8c8d', grifter:'#8e44ad', phantom:'#1abc9c', collector:'#f1c40f', apex:'#e74c3c', stalker:'#00cec9', newmoon:'#2c3e50'
+};
+
+// Fortress log curve: seat 2 = 4/5, seat 10 = 90/100
+function fortressReq(pos) {
+  const t = (pos - 2) / 8.0;
+  // Consecutive fortress: need pos*(pos-1)*2 IN A ROW, floor 15, capped at 90
+  const FORT_NEED = {2:16,3:24,4:32,5:40,6:48,7:56,8:64,9:72,10:80};
+  let need = FORT_NEED[pos] || 30;
+  let window = need; // window = need for consecutive
+  return { window, need };
+}
+
+// Rep Victory power curve: 10.0 → 9.0 over 100 rounds
+function repThreshold(r) {
+  return 9.0; // Static. You need 9/10 avg. Only the truly beloved.
+}
+
+let G = null, autoTimer = null, autoSpeed = 400;
+function rand(a,b) { return Math.floor(Math.random()*(b-a+1))+a; }
+const REP_WINDOW = 2; // rolling window: last 2 ratings + 1 ownership vote
+function repAvg(reps, playerIdx) { // Rep = 3×ownership + last 2 ratings, avg over 5
+  if(!reps || reps.length===0) return 0;
+  const w = reps.slice(-REP_WINDOW);
+  if(playerIdx !== undefined && G && G.shares) {
+    const own = G.shares[playerIdx][playerIdx]; // 6/10 = 6.0
+    const all = [own, own, own, ...w]; // ownership counts 3×
+    return all.reduce((a,b)=>a+b,0) / all.length;
+  }
+  return w.reduce((a,b)=>a+b,0)/w.length;
+}
+function pick(arr) { return arr[rand(0,arr.length-1)]; }
+
+function newGame() {
+  stopAuto();
+  // Build lobby: random sample from full pool, 11 players (like the engine)
+  const pool = STRATS.slice();
+  const strats = [];
+  for(let i=0;i<N_PLAYERS;i++) strats.push(pool[rand(0,pool.length-1)]);
+  for(let i=strats.length-1;i>0;i--) { const j=rand(0,i); [strats[i],strats[j]]=[strats[j],strats[i]]; }
+
+  G = {
+    strats, round: 0, over: false, winner: null, winType: null,
+    chips: Array(N_PLAYERS).fill(50),
+    chairScores: Array(N_PLAYERS).fill(0),
+    chairHistory: [], // [{p0:score, p1:score, ...}] per round
+    reps: Array.from({length:N_PLAYERS},()=>[]),
+    inventory: Array.from({length:N_PLAYERS},()=>[]), // held ratings not yet deployed
+    hrEarnings: Array(N_PLAYERS).fill(0),
+    hrAttempts: Array(N_PLAYERS).fill(0),
+    hrHits: Array(N_PLAYERS).fill(0),
+    seatHistory: Array.from({length:N_PLAYERS},()=>[]),
+    uniqueSeats: Array.from({length:N_PLAYERS},()=>({})),  // {seat: lastRound}
+    tsg: {}, tsg_all: {},  // tsg = current round, tsg_all = all historical 10★ links {key: count}
+    ratingHistory: [],  // [{1:count, 2:count, ..., 10:count}, ...] per round
+    ratingTotals: {},   // cumulative count of each star rating
+    ratingPrices: [],   // [{1:price, 2:price, ..., 10:price}, ...] per round
+    trades: [],         // [{round, seller, buyer, target, star, price}, ...] all trades this game
+    roundTrades: [],    // trades this round only
+    ck: 0, lk: null, lb: Array(N_PLAYERS).fill(0),
+    lastBids: Array(N_PLAYERS).fill(0),
+    lastScores: Array(N_PLAYERS).fill(0),
+    seatOccupants: {},
+    blocked: new Set(),
+    // SHARES: every player is a stock. You own 0 of yourself, 1 of everyone else.
+    shares: (() => {
+      // Randomized starting shares: 10 shares per player
+      // 9% go to bank, rest distributed among players
+      const n = N_PLAYERS;
+      const s = Array.from({length:n}, () => Array(n).fill(0));
+      const bk = Array(n).fill(0); // bank starting shares
+      // Each player starts with 6 random shares. Bank gets the rest (4 per player).
+      // Build a pool of all shares, shuffle, deal 6 to each player
+      const allShares = []; // {target} — which player's stock
+      for(let target=0; target<n; target++) {
+        for(let j=0; j<10; j++) allShares.push(target);
+      }
+      // Shuffle
+      for(let j=allShares.length-1; j>0; j--) {
+        const k = Math.floor(Math.random()*(j+1));
+        [allShares[j], allShares[k]] = [allShares[k], allShares[j]];
+      }
+      // Deal 6 to each player
+      let idx = 0;
+      for(let player=0; player<n; player++) {
+        for(let d=0; d<6; d++) {
+          if(idx < allShares.length) {
+            s[player][allShares[idx]]++;
+            idx++;
+          }
+        }
+      }
+      // Remaining shares go to bank
+      while(idx < allShares.length) {
+        bk[allShares[idx]]++;
+        idx++;
+      }
+      // Store bank shares for init
+      window._initBankShares = bk;
+      return s;
+    })(),
+    sharePrices: Array(N_PLAYERS).fill(10), // last trade price per player-stock — IPO at $10
+    sharePriceHistory: [], // [{p0:price, p1:price, ...}, ...] per round
+    chipHistory: [], // [{0:chips, 1:chips, ...}, ...] per round
+    bankShares: window._initBankShares || Array(N_PLAYERS).fill(0), // bank starts with ~9%
+    bankRatings: [], // bank's rating inventory (star values it holds for resale)
+    bankBudget: 5, // bank gets $5/round to invest
+    log: []
+  };
+  document.getElementById('win-overlay').classList.remove('show');
+  const wp = document.getElementById('winner-panel'); if(wp) { wp.style.display='none'; wp.innerHTML=''; }
+  // Clear game log
+  const logEl = document.getElementById('log');
+  if(logEl) logEl.innerHTML = '';
+  _logBuffer.length = 0;
+  render();
+  addLog(`🎲 New game! ${N_PLAYERS} players, ${N_SEATS} seats. Musical chairs.`);
+}
+
+function getHardRead(s, r, g, i, bids) {
+  // Returns [target, predicted_seat] or null
+  // Readers: shadow, raider, brawler, kingslayer, regulator, arbiter, shark, snitch, sleeper, sentinel
+  const n = N_PLAYERS;
+  const readers = ['shadow','raider','brawler','kingslayer','regulator','arbiter','shark','snitch','sleeper','sentinel','phantom','apex','stalker','newmoon',
+                   'assassin','punk','thug','fu_sharkbait','outsider_a','outsider_b','day_trader'];
+  if(!readers.includes(s) && !s.includes('Hunter') && !s.includes('Predator')) return null;
+  if(r < 2) return null; // need history
+  if(Math.random() > 0.4) return null; // not every reader reads every round
+
+  // Pick a target (not self)
+  let tgt = -1;
+  if(s==='shadow') {
+    // Shadow reads the king
+    tgt = g.lk >= 0 ? g.lk : Math.floor(Math.random()*n);
+  } else if(s==='kingslayer' || s==='arbiter') {
+    // Read the strongest player (highest chair score excluding self)
+    let best=-1, bestScore=-1;
+    for(let j=0;j<n;j++) { if(j!==i && g.chairScores[j]>bestScore) { bestScore=g.chairScores[j]; best=j; } }
+    tgt = best;
+  } else if(s==='stalker') {
+    // Find most predictable player — whoever repeated their seat most often
+    let bestPred=-1, bestRepeat=0;
+    for(let j=0;j<n;j++) {
+      if(j===i) continue;
+      const hist = g.seatHistory ? g.seatHistory[j] : [];
+      if(hist.length < 3) continue;
+      // Count how often they sat in their last seat
+      const lastSeat = hist[hist.length-1];
+      let repeats = 0;
+      for(let h=Math.max(0,hist.length-10);h<hist.length;h++) { if(hist[h]===lastSeat) repeats++; }
+      if(repeats > bestRepeat) { bestRepeat=repeats; bestPred=j; }
+    }
+    tgt = bestPred >= 0 ? bestPred : Math.floor(Math.random()*n);
+  } else {
+    // Random target
+    tgt = Math.floor(Math.random()*n);
+  }
+  if(tgt === i || tgt < 0 || tgt >= n) return null;
+
+  // Predict their bid based on their last known position
+  const lastBid = g.lastBids[tgt] || 1;
+  // Smart prediction: assume they'll repeat (most strategies are predictable)
+  const pred = lastBid;
+  return [tgt, pred];
+}
+
+function getBid(s, r, g, i) {
+  if(s==='sharkbait'||s==='fu_sharkbait'||s==='shark'||s==='cartel_a') return 1;
+  if(s==='diplomat_a') return 4;
+  if(s==='diplomat_b') return 5;
+  if(s==='diplomat_c') return 6;
+  if(s==='settler') return 5;
+  if(s==='bouncer') return g.lk===i ? pick([5,6,7,8]) : 1;
+  if(s==='brawler') return rand(1,N_SEATS);
+  if(s==='merchant') { const c=[7,6,8,5,4,6,5,3,2]; return c[r%c.length]; }
+  if(s==='cartel_b') { if(Math.random()<Math.max(0,(r%10-2)*0.15)) return pick([2,3,7]); return 1; }
+  if(s==='outsider_a') { if(r<=20) return 6; return r%2===0?1:6; }
+  if(s==='outsider_b') { if(r<=20) return 6; if(r>=80) return 1; return r%2===1?1:6; }
+  if(s==='drifter') return (r%N_SEATS)+1;
+  if(s==='sleeper') return r<70 ? rand(3,8) : 1;
+  if(s==='raider') return rand(1,N_SEATS); // drifts around, uses chips for hostile takeovers
+  if(s==='daytrader') return rand(3,N_SEATS); // doesn't care about king seat, mid-range for payday income
+  if(s==='vulture') return rand(2,7); // mid-range seats, stable income for market plays
+  if(s==='ghost') {
+    const freq={}; g.lb.forEach(b=>freq[b]=(freq[b]||0)+1);
+    const empty=[]; for(let p=1;p<=N_SEATS;p++) if(!freq[p]) empty.push(p);
+    if(empty.length) return Math.min(...empty);
+    let best=2,bc=999; for(let p=2;p<=N_SEATS;p++) if((freq[p]||0)<bc){bc=freq[p]||0;best=p;}
+    return best;
+  }
+  if(s==='shadow') {
+    const freq={}; g.lb.forEach(b=>freq[b]=(freq[b]||0)+1);
+    const empty=[]; for(let p=2;p<=N_SEATS;p++) if(!freq[p]) empty.push(p);
+    return empty.length ? pick(empty) : rand(2,N_SEATS);
+  }
+  // KINGSLAYER family: spoiler bid — disrupt frontrunners, cycle otherwise
+  if(s==='kingslayer'||s==='regulator'||s==='arbiter') {
+    // Check fortress threats
+    let bestFortPct=0, fortSeat=-1;
+    for(let j=0;j<G.strats.length;j++) {
+      if(j===i) continue;
+      const hist=G.seatHistory[j]||[];
+      for(let pos=2;pos<=N_SEATS;pos++) {
+        const need={2:16,3:24,4:32,5:40,6:48,7:56,8:64,9:72,10:80}[pos]||30;
+        let streak=0;
+        for(let h=hist.length-1;h>=0;h--) { if(hist[h]===pos) streak++; else break; }
+        const pct=streak/need;
+        if(pct>bestFortPct) { bestFortPct=pct; fortSeat=pos; }
+      }
+    }
+    // Check dynasty threat
+    const dynPct = G.ck / DYNASTY;
+    if(bestFortPct > 0.6 && fortSeat > 0) return fortSeat;
+    if(dynPct > 0.5 && G.lk !== null && G.lk !== i) return 1;
+    const cycle=[1,3,5,7,9,2,4,6,8,10];
+    return cycle[r%cycle.length];
+  }
+  // VILLAIN bids
+  if(s==='punk') return (r%N_SEATS)+1; // cycle all, tank everyone's rep
+  if(s==='thug') return 1; // king runner
+  if(s==='snitch') return 3; // camps seat 3
+  if(s==='grifter') { const c=[7,6,8,5,4,6,5,3,2]; return c[r%c.length]; } // cycle mid
+  if(s==='newmoon') {
+    // Shadow: find the least contested seat — zero collisions
+    if(r < 3) return rand(4,8); // random mid early
+    const freq = {};
+    for(let j=0;j<N_PLAYERS;j++) { if(j===i) continue; const lb=g.lastBids[j]||0; freq[lb]=(freq[lb]||0)+1; }
+    let bestSeat=5, bestContest=999;
+    for(let s2=2;s2<=N_SEATS;s2++) { // avoid seat 1 (king gets read)
+      const contest = freq[s2]||0;
+      if(contest<bestContest) { bestContest=contest; bestSeat=s2; }
+    }
+    return bestSeat;
+  }
+  if(s==='stalker') return (r%2===0) ? 8 : 9; // seats 8-9 — high odds (8x-10x) for massive payouts
+  if(s==='apex') {
+    // Phase 1: seat 2 (read king, crown income)
+    // Phase 2: adaptive — hold fortress seat if streak is good
+    if(r < 80) return 2;
+    // Check fortress progress — if we have a streak going, hold it
+    const myHist = g.seatHistory ? g.seatHistory[i] : [];
+    if(myHist.length > 0) {
+      const lastSeat = myHist[myHist.length-1];
+      if(lastSeat > 0) {
+        // Count consecutive same-seat
+        let streak = 0;
+        for(let h = myHist.length-1; h >= 0; h--) {
+          if(myHist[h] === lastSeat) streak++; else break;
+        }
+        if(streak >= 4) return lastSeat; // hold fortress seat
+      }
+    }
+    // Late game: if chair score is high, camp a safe seat
+    if(r > 200 && g.chairScores[i] > 1000) return 3;
+    return 2; // default: read the king
+  }
+  if(s==='collector') return 7; // camps seat 7 — steady income, low drama, hoards high ratings
+  if(s==='phantom') {
+    // Phase 1 (r<25): Pure chaos — unreadable, deny readers their income
+    if(r < 25) return rand(1, N_SEATS);
+    // Phase 2: Lock onto least contested mid-seat (3-6) for fortress
+    if(!g._phantomSeat) {
+      const freq = {};
+      for(let j=0;j<N_PLAYERS;j++) { if(j===i) { continue; } const lb=g.lb[j]||0; freq[lb]=(freq[lb]||0)+1; }
+      let bestSeat=3, bestContest=999;
+      for(let p=3;p<=6;p++) { if((freq[p]||0)<bestContest) { bestContest=freq[p]||0; bestSeat=p; } }
+      g._phantomSeat = bestSeat;
+    }
+    return g._phantomSeat;
+  }
+  return rand(1,N_SEATS);
+}
+
+function step() {
+  if(!G||G.over) return;
+  const r = G.round;
+  const n = N_PLAYERS;
+
+  // Bids
+  const bids = [];
+  for(let i=0;i<n;i++) bids.push(Math.max(1,Math.min(N_SEATS,getBid(G.strats[i],r,G,i))));
+
+  // HR BETTING SYSTEM
+  // Hit: target pays 50% of (bet × odds), bank pays 50%
+  // Miss: reader pays target 50% of bet, bank gets 50% of bet
+  const blocked = new Set();
+  const SEAT_ODDS = {1:2, 2:2, 3:4, 4:4, 5:6, 6:6, 7:8, 8:8, 9:10, 10:10};
+  for(let i=0;i<n;i++) {
+    const hr = getHardRead(G.strats[i], r, G, i, bids);
+    if(!hr) continue;
+    const [tgt, tpos] = hr;
+    if(tgt < 0 || tgt >= n || tgt === i) continue;
+    G.hrAttempts[i] = (G.hrAttempts[i]||0) + 1;
+    const odds = SEAT_ODDS[tpos] || 4;
+    // Scaled bet: 5% of wealth, floor $5, cap $25
+    const bet = Math.max(5, Math.floor(G.chips[i] * 0.05));
+    if(bet <= 0) continue;
+    if(bids[tgt] === tpos && !blocked.has(tgt)) {
+      // HIT — bank pays the full payout (sportsbook model)
+      G.hrHits[i] = (G.hrHits[i]||0) + 1;
+      const payout = bet * odds;
+      const bankPays = Math.min(payout, G.bankBudget);
+      G.chips[i] += bankPays;
+      G.bankBudget -= bankPays;
+      G.hrEarnings[i] = (G.hrEarnings[i]||0) + bankPays;
+      blocked.add(tgt);
+      // 🔍 STALKER: on HIT, buy a share of the target, remainder → double-down pool
+      if(G.strats[i] === 'stalker' && bankPays > 0) {
+        const sharePrice = G.sharePrices[tgt] || 10;
+        if(bankPays >= sharePrice && G.shares[i][tgt] < 6) {
+          G.chips[i] -= sharePrice; G.shares[i][tgt]++;
+          G._stalkerDD = (G._stalkerDD||0) + (bankPays - sharePrice); // remainder → double-down
+          if(!G.autoPlay && !G.fastForward) addLog(`<span style="color:#00cec9">🔍 STALKER P${i} buys P${tgt} share ($${sharePrice.toFixed(0)}) + $${(bankPays-sharePrice).toFixed(0)} → double-down pool</span>`);
+        } else {
+          G._stalkerDD = (G._stalkerDD||0) + bankPays; // all to double-down
+        }
+      }
+      if(!G.autoPlay && !G.fastForward) addLog(`<span class="log-hr">🎯 P${i} READS P${tgt} → seat ${tpos} (${odds}x, $${bet} bet) +$${bankPays.toFixed(0)}!</span>`);
+    } else {
+      // MISS — reader pays bet to bank
+      const loss = Math.min(bet, G.chips[i]);
+      G.chips[i] -= loss;
+      G.bankBudget += loss;
+      G.hrEarnings[i] = (G.hrEarnings[i]||0) - loss;
+      if(!G.autoPlay && !G.fastForward) addLog(`<span style="color:#666">❌ P${i} misread P${tgt} (guessed ${tpos}, was ${bids[tgt]}) -$${loss.toFixed(0)}</span>`);
+    }
+  }
+
+  // Resolve seating (11 players → 10 seats, 1 always blocked)
+  const scores = Array(n).fill(0);
+  const uniq = new Set();
+  const af = {};
+  for(let i=0;i<n;i++) { if(blocked.has(i)) continue; af[bids[i]]=(af[bids[i]]||0)+1; }
+
+  // Unique bids
+  for(let i=0;i<n;i++) {
+    if(blocked.has(i)||uniq.has(bids[i])) continue;
+    if(af[bids[i]]===1) { scores[i]=N_SEATS+1-bids[i]; uniq.add(bids[i]); }
+  }
+
+  // Collisions: 2+ players → rep tiebreak
+  for(let pos=1;pos<=N_SEATS;pos++) {
+    if(uniq.has(pos)) continue;
+    const cl = [];
+    for(let i=0;i<n;i++) if(bids[i]===pos&&!blocked.has(i)) cl.push(i);
+    if(cl.length===2) {
+      const [p0,p1] = cl;
+      // 10★ link wins
+      if(G.tsg[p1]===p0 && G.tsg[p0]!==p1) { scores[p0]=N_SEATS+1-pos; uniq.add(pos); }
+      else if(G.tsg[p0]===p1 && G.tsg[p1]!==p0) { scores[p1]=N_SEATS+1-pos; uniq.add(pos); }
+      else {
+        const r0=repAvg(G.reps[p0],p0);
+        const r1=repAvg(G.reps[p1],p1);
+        if(r0>r1) { scores[p0]=N_SEATS+1-pos; uniq.add(pos); }
+        else if(r1>r0) { scores[p1]=N_SEATS+1-pos; uniq.add(pos); }
+        else addLog(`<span class="log-collision">💥 Tie at seat ${pos}!</span>`);
+      }
+    } else if(cl.length>2) {
+      // N-way pileup: highest rep wins. Full stop.
+      cl.sort((a,b) => repAvg(G.reps[b],b) - repAvg(G.reps[a],a));
+      const winner = cl[0];
+      if(repAvg(G.reps[winner],winner) > repAvg(G.reps[cl[1]],cl[1])) {
+        scores[winner] = N_SEATS+1-pos; uniq.add(pos);
+        addLog(`<span class="log-collision">💥 ${cl.length}-way pileup at seat ${pos} — P${winner} wins by rep (${repAvg(G.reps[winner],winner).toFixed(1)}★)</span>`);
+      } else {
+        addLog(`<span class="log-collision">💥 ${cl.length}-way pileup at seat ${pos} — rep tied!</span>`);
+      }
+    }
+  }
+
+  // Update chips + chair scores + streak bonus
+  for(let i=0;i<n;i++) {
+    G.chairScores[i] += scores[i];
+    if(r>0) G.chips[i] += scores[i];
+    // PAYDAY: Seat N pays $N every N rounds — distributed to SHAREHOLDERS
+    if(scores[i] > 0 && r > 0) {
+      const seat = bids[i];
+      if(r % seat === 0) {
+        // Distribute to all shareholders of player i
+        const totalShares = 10; // always 10 shares exist per player
+        let distributed = 0;
+        for(let sh=0; sh<n; sh++) {
+          if(G.shares[sh][i] > 0) {
+            const cut = (G.shares[sh][i] / totalShares) * seat;
+            G.chips[sh] += cut;
+            distributed += cut;
+            if(sh !== i && cut >= 0.5) {
+              addLog(`<span style="color:#2ed573">💰 P${sh} earns $${cut.toFixed(1)} dividend from P${i} (seat ${seat})</span>`);
+            }
+          }
+        }
+        // Bank shares earn too
+        if(G.bankShares[i] > 0) {
+          const bankCut = (G.bankShares[i] / totalShares) * seat;
+          G.bankBudget += bankCut; // bank reinvests dividends
+        }
+        const selfCut = (G.shares[i][i] / totalShares) * seat;
+        if(selfCut > 0) addLog(`<span style="color:#2ed573">💰 P${i} PAYDAY seat ${seat} → keeps $${selfCut.toFixed(1)}/${seat} (owns ${G.shares[i][i]}/10)</span>`);
+        else addLog(`<span style="color:#ff6b6b">💸 P${i} PAYDAY seat ${seat} → $${seat} ALL to shareholders (owns 0)</span>`);
+      }
+    }
+  }
+
+  // Track seat history
+  for(let i=0;i<n;i++) {
+    const seated = scores[i] > 0 ? bids[i] : 0;
+    G.seatHistory[i].push(seated);
+    if(seated > 0) G.uniqueSeats[i][seated] = G.round;  // record seat + round
+  }
+
+  // === RATING + VOTE MARKET ===
+  // 10★ expiry: remove from reps after 75 turns
+  if(G.tenHistory) {
+    const expired = G.tenHistory.filter(e => r - e.round > 75);
+    for(const e of expired) {
+      const idx = G.reps[e.to].indexOf(10);
+      if(idx >= 0) {
+        G.reps[e.to].splice(idx, 1);
+        addLog(`<span style="color:#ff6b6b">💔 P${e.from}'s 10★ on P${e.to} expired! (33 turns)</span>`);
+      }
+    }
+    G.tenHistory = G.tenHistory.filter(e => r - e.round <= 75);
+  }
+  // Rebuild tsg from active 10★ history
+  G.tsg = {};
+  if(G.tenHistory) {
+    for(const entry of G.tenHistory) {
+      G.tsg[entry.from] = entry.to; // all remaining are within 75 turns
+    }
+  }
+  const roundRatings = {};
+  G.roundTrades = [];
+
+  // === RATING ECONOMY: Produce → Inventory → Market → Deploy ===
+  // Each player produces 1 rating per round → goes to INVENTORY (held, not applied)
+  // Players can SELL from inventory or BUY into inventory on the market
+  // Players choose WHEN to DEPLOY ratings from inventory onto targets
+  // All inventory must be deployed by game end
+
+  if(!G.marketPrices) G.marketPrices = {1:1,2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10};
+
+  // Pure supply/demand pricing. No caps. No anchoring. Emergence.
+  if(!G.ratingDemand) G.ratingDemand = {};
+  if(!G.ratingSupply) G.ratingSupply = {};
+  function ratingAsk(starVal, round) {
+    const base = G.marketPrices[starVal] || starVal;
+    G.ratingSupply[starVal] = (G.ratingSupply[starVal]||0) + 1;
+    const d = G.ratingDemand[starVal] || 0;
+    const s = Math.max(1, G.ratingSupply[starVal] || 1);
+    const ratio = d / s;
+    const drift = 1.0 + (ratio - 1.0) * 0.15;
+    const noise = 0.9 + Math.random() * 0.2;
+    return Math.max(1, base * drift * noise);
+  }
+  function logRatingTrade(starVal, price) {
+    const old = G.marketPrices[starVal] || starVal;
+    G.marketPrices[starVal] = old + (price - old) * 0.3;
+    G.ratingDemand[starVal] = (G.ratingDemand[starVal]||0) + 1;
+  }
+  function ratingValue(starVal, buyerChips, round) {
+    const late = round > N_ROUNDS * 0.3;
+    const nearWin = round > N_ROUNDS * 0.5;
+    const urg = nearWin ? 2.5 : (late ? 1.5 : 1.0);
+    const repPremium = 1.0 + Math.max(0, starVal - 5) * 0.3;
+    const wealthPct = Math.min(0.2, buyerChips / 400);
+    return starVal * repPremium * buyerChips * wealthPct * urg * (0.5 + Math.random());
+  }
+
+  // Phase 1: DEAL HANDS
+  // Regular: {1-9} refreshed every 10 rounds
+  // 10★: dealt ONLY on turns 100 and 200. Sticks for 75 turns (doesn't decay).
+  if(!G.hands || r % 10 === 0) {
+    G.hands = Array.from({length:n}, () => {
+      // Draw 4 random cards from 1-9 (scarcity creates rep variance)
+      const pool = [1,2,3,4,5,6,7,8,9];
+      const hand = [];
+      for(let c=0; c<4; c++) {
+        const idx = Math.floor(Math.random() * pool.length);
+        hand.push(pool.splice(idx, 1)[0]);
+      }
+      return hand.sort((a,b)=>a-b);
+    });
+    G.usedRatings = Array.from({length:n}, () => new Set());
+    G.ratedPlayers = Array.from({length:n}, () => new Set());
+    if(r > 0) addLog(`<span style="color:#ffd700">🃏 SEASON ${Math.floor(r/10)+1} — Fresh hands dealt! (4 random cards)</span>`);
+    // Decay rating supply counters, mean-revert cold markets
+    for(let sv=1; sv<=10; sv++) {
+      G.ratingSupply[sv] = Math.max(0, Math.floor((G.ratingSupply[sv]||0) / 2));
+      if(!G.ratingDemand[sv]) {
+        const old = G.marketPrices[sv] || sv;
+        G.marketPrices[sv] = old * 0.95 + sv * 0.05;
+      }
+    }
+  }
+  // 10★ events: turns 33 and 66
+  if(!G.tens) G.tens = Array.from({length:n}, () => []); // each player's unplayed 10★ pool
+  if(!G.tenHistory) G.tenHistory = []; // {from, to, round} — tracks when 10★s were given
+  // 10★ RARE DROPS — 5% chance per player per hand refresh (every 10 rounds)
+  if(r > 0 && r % 10 === 0) {
+    for(let i=0;i<n;i++) {
+      if(Math.random() < 0.05) {
+        G.tens[i].push(10);
+        addLog(`<span style="color:#ffd700; font-weight:bold">⭐ P${i} found a 10★ rating! (rare drop)</span>`);
+      }
+    }
+  }
+
+  // Phase 2: MARKET — sell unplayed ratings from your hand
+  // You're selling the RIGHT to receive a rating, not the number itself
+  // Seller lists: "I have a 7★ I haven't used yet"
+  // Buyer pays chips → seller assigns that rating to buyer (or buyer's chosen target)
+  const listings = [];
+  for(let i=0;i<n;i++) {
+    const s = G.strats[i];
+    const avail = G.hands[i].filter(v => !G.usedRatings[i].has(v));
+    for(const star of avail) {
+      let list = false;
+      if(s==='merchant'||s==='drifter'||s==='shadow') list = true;
+      else if(s==='sharkbait'||s==='bouncer') list = star <= 7;
+      else if(s==='diplomat_a'||s==='diplomat_b'||s==='diplomat_c') list = star < 10;
+      else if(s==='settler') list = star <= 5;
+      else if(s==='sleeper') list = G.round < 70;
+      else if(s==='newmoon') list = false; // NEVER sells ratings on market — weaponizes ALL of them
+      else if(s==='stalker') list = star <= 3; // dumps trash, keeps 4+ to pump target
+      else if(s==='apex') list = star <= 4; // hoards 5+, dumps 1-4 as sabotage ammo
+      else if(s==='collector') list = star <= 5; // NEVER sells 6+, dumps trash to buy premium
+      else if(s==='vulture') list = star <= 4; // vulture HOARDS high ratings, sells trash
+      else if(s==='daytrader') list = star <= 6; // sells mid-range, keeps high
+      else if(s==='kingslayer'||s==='regulator'||s==='arbiter') list = star <= 4; // sell low, weaponize
+      else if(s==='punk'||s==='snitch') list = true; // sell everything, tank the field
+      else if(s==='thug') list = star <= 5;
+      else if(s==='grifter') list = star <= 6;
+      else list = Math.random() < 0.3;
+      if(list) listings.push({seller:i, star});
+    }
+  }
+  listings.sort(() => Math.random()-0.5);
+
+  // Process max 8 listings per round (not all 48+)
+  const maxListings = Math.min(8, listings.length);
+  for(let _li=0; _li<maxListings; _li++) {
+    const item = listings[_li];
+    if(G.usedRatings[item.seller].has(item.star)) continue; // already sold/used this round
+    // Dynamic pricing from engine
+    let ask = ratingAsk(item.star, r);
+    ask = Math.max(1, Math.round(ask * 10) / 10);
+    const nearWin = r > N_ROUNDS * 0.6 || (G.tenHistory && G.tenHistory.length > 5);
+
+    const shuffledBuyers = Array.from({length:n},(_,j)=>j).sort(()=>Math.random()-0.5);
+    for(const buyer of shuffledBuyers) {
+      if(buyer === item.seller) continue;
+      if(G.chips[buyer] < ask) continue;
+      if(G.ratedPlayers[item.seller].has(buyer)) continue; // already rated this player
+
+      // SUPPLY/DEMAND: willingness scales with wealth, star value, and game phase
+      let bestValue = 0, target = buyer;
+      const lateGame = r > N_ROUNDS * 0.6;
+      const isVultureBuyer = G.strats[buyer] === 'vulture';
+      const isCollector = G.strats[buyer] === 'collector';
+      const isApex = G.strats[buyer] === 'apex';
+      const collectorBid = (isCollector || isApex) && item.star >= 7; // collector overpays for 7+★
+      const vultureMult = (isVultureBuyer && item.star >= 7) ? 2.0 : collectorBid ? 3.0 : 1.0;
+      const urgMult = (nearWin ? 2.0 : (lateGame ? 1.3 : 1.0)) * vultureMult;
+      const wealthPct = Math.min(0.15, G.chips[buyer] / 500);
+      
+      if(item.star >= 7) {
+        bestValue = item.star * G.chips[buyer] * wealthPct * urgMult;
+        target = buyer;
+      } else if(item.star <= 3) {
+        const repLeader = Array.from({length:n},(_,j)=>j).filter(j=>j!==buyer)
+          .sort((a,b)=> repAvg(G.reps[b],b) - repAvg(G.reps[a],a))[0];
+        bestValue = item.star * G.chips[buyer] * wealthPct * urgMult * 0.8;
+        target = repLeader || (buyer+1)%n;
+      } else {
+        const chance = lateGame ? 0.4 : 0.15;
+        bestValue = Math.random() < chance ? item.star * G.chips[buyer] * wealthPct * urgMult * 0.5 : 0;
+        target = buyer;
+      }
+
+      if(bestValue > 0 && ask <= bestValue && G.chips[buyer] >= ask) {
+        // Collector overpays 2× for 7+★ — the premium gets logged as market price
+        const finalPrice = (collectorBid && item.star >= 7) ? ask * 2 : ask;
+        G.chips[buyer] -= finalPrice;
+        G.chips[item.seller] += finalPrice;
+        // Seller assigns the rating to the target
+        G.reps[target].push(item.star);
+        G.usedRatings[item.seller].add(item.star);
+        G.ratedPlayers[item.seller].add(target);
+        roundRatings[item.star] = (roundRatings[item.star]||0) + 1;
+        if(item.star >= 10) { G.tsg[item.seller] = target; const key=item.seller+'→'+target; G.tsg_all[key]=(G.tsg_all[key]||0)+1; }
+        logRatingTrade(item.star, finalPrice); // collector's premium becomes the new market price
+        const isSab = item.star <= 3 && target !== buyer;
+        G.roundTrades.push({round:G.round, seller:item.seller, buyer, target, star:item.star, price:ask, sabotage:isSab});
+        G.trades.push({round:G.round, seller:item.seller, buyer, target, star:item.star, price:ask, sabotage:isSab});
+        const arrow = isSab ? '💣' : '💱';
+        addLog(`<span style="color:${isSab?'#ff4757':'#ffa502'}">${arrow} P${buyer} buys ${item.star}★ from P${item.seller} for $${ask.toFixed(1)} → P${target}${isSab?' (SABOTAGE!)':''}</span>`);
+        break;
+      }
+    }
+  }
+
+  // === BANK RATING MARKET MAKER ===
+  // Bank values ratings exponentially: star² × 2 (1★=$2, 5★=$50, 9★=$162, 10★=$200)
+  // Buys below its valuation, establishing price discovery for high stars
+  const bankRatingVal = (sv) => sv * sv * 2;
+  if(G.bankBudget > 50 && G.bankRatings.length < 20) {
+    for(let _bb=0; _bb<2; _bb++) {
+      for(const item of listings.slice(maxListings)) {
+        if(G.usedRatings[item.seller].has(item.star)) continue;
+        const ask = ratingAsk(item.star, r);
+        const bankVal = bankRatingVal(item.star);
+        if(ask <= bankVal && G.bankBudget >= ask) {
+          G.bankBudget -= ask;
+          G.chips[item.seller] += ask;
+          G.usedRatings[item.seller].add(item.star);
+          G.bankRatings.push(item.star);
+          logRatingTrade(item.star, ask);
+          if(!G.autoPlay && !G.fastForward) addLog(`<span style="color:#ffeaa7">🏦 BANK buys ${item.star}★ for $${ask.toFixed(0)} → inventory</span>`);
+          break;
+        }
+      }
+    }
+  }
+
+  // Bank SELLS: auction ratings from inventory when market price > 2x what bank paid (or every 10 rounds)
+  if(G.bankRatings.length > 0 && r % 5 === 0) {
+    // Sell highest-value rating first
+    G.bankRatings.sort((a,b) => (G.marketPrices[b]||b) - (G.marketPrices[a]||a));
+    const sellStar = G.bankRatings[0];
+    const is10 = sellStar === 10;
+
+    if(is10) {
+      // 10★ auction from bank inventory
+      const reserve = Math.max(10, (G.marketPrices[10]||10) * 0.7);
+      const bids10 = [];
+      for(let j=0;j<n;j++) {
+        if(G.chips[j] < reserve) continue;
+        const incoming10 = G.tenHistory.filter(h => h.to === j && r - h.round < 75).length;
+        const helioUrge = incoming10 >= 3 ? 0.5 : incoming10 >= 1 ? 0.3 : 0.15;
+        const isDiplo = G.strats[j].startsWith('diplomat');
+        const urgency = Math.max(helioUrge, isDiplo ? 0.4 : 0.1);
+        const maxBid = G.chips[j] * urgency * (0.7 + Math.random() * 0.6);
+        if(maxBid >= reserve) bids10.push({buyer:j, bid:maxBid});
+      }
+      if(bids10.length > 0) {
+        bids10.sort((a,b) => b.bid - a.bid);
+        const w = bids10[0];
+        const price = Math.round(w.bid * 10) / 10;
+        G.chips[w.buyer] -= price;
+        G.bankBudget += price;
+        G.bankRatings.shift();
+        G.tens[w.buyer].push(10);
+        logRatingTrade(10, price);
+        addLog(`<span style="color:#ffd700; font-weight:bold">🏦⭐ BANK AUCTIONS 10★ → P${w.buyer} for $${price.toFixed(0)}! (${bids10.length} bidders)</span>`);
+      }
+    } else {
+      // Regular rating: sell to highest bidder
+      const ask = Math.max(sellStar, (G.marketPrices[sellStar]||sellStar) * 1.2);
+      const buyers = Array.from({length:n},(_,j)=>j).filter(j => G.chips[j] >= ask).sort(() => Math.random()-0.5);
+      for(const buyer of buyers) {
+        const wealthPct = Math.min(0.15, G.chips[buyer] / 500);
+        const value = sellStar * G.chips[buyer] * wealthPct;
+        if(value >= ask) {
+          G.chips[buyer] -= ask;
+          G.bankBudget += ask;
+          G.bankRatings.shift();
+          G.reps[buyer].push(sellStar);
+          logRatingTrade(sellStar, ask);
+          addLog(`<span style="color:#ffeaa7">🏦 BANK sells ${sellStar}★ to P${buyer} for $${ask.toFixed(0)} (${G.bankRatings.length} left)</span>`);
+          break;
+        }
+      }
+    }
+  }
+
+  // Phase 3: DEPLOY — each player assigns 1 rating per round from hand + optional 10★
+  // 10★ deployed separately (sticks for 75 turns, doesn't decay)
+  // 10★ deploy or sell — strategy decides
+  for(let i=0;i<n;i++) {
+    if(G.tens[i].length === 0) continue;
+    const s = G.strats[i];
+
+    // 10★ AUCTION: seller lists, ALL players bid, highest bidder wins
+    const sellTypes = ['merchant','drifter','sharkbait','bouncer','brawler','daytrader','vulture','grifter','punk','snitch','kingslayer','regulator','arbiter','phantom','outside_a','outside_b'];
+    if(sellTypes.includes(s)) {
+      const reserve = Math.max(5, (G.marketPrices[10] || 10) * 0.5); // reserve = 50% of last price
+      // Collect bids from all players
+      const bids10 = [];
+      for(let j=0;j<n;j++) {
+        if(j === i) continue;
+        if(G.chips[j] < reserve) continue;
+        // Bid = % of wealth based on how much they want a 10★
+        // Heliocentric seekers (already have incoming 10★s) bid aggressively
+        const incoming10 = G.tenHistory.filter(h => h.to === j && r - h.round < 75).length;
+        const helioUrge = incoming10 >= 3 ? 0.5 : incoming10 >= 1 ? 0.3 : 0.15;
+        // Alliance seekers (diplomats) always want 10★
+        const isDiplo = G.strats[j].startsWith('diplomat');
+        const allianceUrge = isDiplo ? 0.4 : 0.1;
+        const urgency = Math.max(helioUrge, allianceUrge);
+        const maxBid = G.chips[j] * urgency * (0.7 + Math.random() * 0.6);
+        if(maxBid >= reserve) bids10.push({buyer:j, bid:maxBid});
+      }
+      // Bank bids up to $100
+      if(G.bankBudget >= reserve) {
+        const bankBid = Math.min(100, G.bankBudget * 0.1);
+        if(bankBid >= reserve) bids10.push({buyer:-1, bid:bankBid});
+      }
+      if(bids10.length > 0) {
+        // Highest bidder wins
+        bids10.sort((a,b) => b.bid - a.bid);
+        const winner = bids10[0];
+        const price = Math.round(winner.bid * 10) / 10;
+        if(winner.buyer === -1) {
+          // Bank wins — holds in inventory for resale
+          G.bankBudget -= price;
+          G.chips[i] += price;
+          G.tens[i].pop();
+          G.bankRatings.push(10);
+          logRatingTrade(10, price);
+          addLog(`<span style="color:#ffd700; font-weight:bold">⭐🔨 10★ AUCTION: P${i} → 🏦 BANK for $${price.toFixed(0)}! (${bids10.length} bidders) — BANK HOLDS</span>`);
+        } else {
+          G.chips[winner.buyer] -= price;
+          G.chips[i] += price;
+          G.tens[i].pop();
+          G.tens[winner.buyer].push(10);
+          logRatingTrade(10, price);
+          G.roundTrades.push({round:r, seller:i, buyer:winner.buyer, target:winner.buyer, star:10, price});
+          G.trades.push({round:r, seller:i, buyer:winner.buyer, target:winner.buyer, star:10, price});
+          addLog(`<span style="color:#ffd700; font-weight:bold">⭐🔨 10★ AUCTION: P${i} → P${winner.buyer} for $${price.toFixed(0)}! (${bids10.length} bidders)</span>`);
+        }
+        continue;
+      }
+    }
+
+    // Deploy 10★ directly (diplomats, settlers, or if sale failed)
+    const unrated10 = Array.from({length:n},(_,j)=>j).filter(j => j!==i);
+    let tgt;
+    if(s==='diplomat_a'||s==='diplomat_b'||s==='diplomat_c') {
+      const tt={diplomat_a:'diplomat_b',diplomat_b:'diplomat_c',diplomat_c:'diplomat_a'}[s];
+      tgt = G.strats.findIndex(st=>st===tt);
+      if(tgt<0) tgt = unrated10[rand(0,unrated10.length-1)];
+    } else if(s==='settler') {
+      tgt = G.strats.findIndex(st=>st==='diplomat_b');
+      if(tgt<0) tgt = unrated10[rand(0,unrated10.length-1)];
+    } else {
+      tgt = unrated10[rand(0,unrated10.length-1)];
+    }
+    G.tens[i].pop();
+    G.reps[tgt].push(10);
+    G.tenHistory.push({from:i, to:tgt, round:r});
+    roundRatings[10] = (roundRatings[10]||0) + 1;
+    G.tsg[i] = tgt; const key=i+'→'+tgt; G.tsg_all[key]=(G.tsg_all[key]||0)+1;
+    addLog(`<span style="color:#ffd700; font-weight:bold">⭐ P${i} gives 10★ to P${tgt}! (sticks 50 turns)</span>`);
+  }
+
+  // Regular deploy: 1-9★ from hand
+  for(let i=0;i<n;i++) {
+    const s = G.strats[i];
+    const avail = G.hands[i].filter(v => !G.usedRatings[i].has(v));
+    const unrated = Array.from({length:n},(_,j)=>j).filter(j => j!==i && !G.ratedPlayers[i].has(j));
+    if(avail.length === 0 || unrated.length === 0) continue;
+
+    // Strategy decides: which rating to play and on whom
+    let star, tgt;
+    if(s==='diplomat_a'||s==='diplomat_b'||s==='diplomat_c') {
+      const tt={diplomat_a:'diplomat_b',diplomat_b:'diplomat_c',diplomat_c:'diplomat_a'}[s];
+      const partner = G.strats.findIndex(st=>st===tt);
+      if(partner>=0 && unrated.includes(partner) && avail.includes(10)) {
+        star = 10; tgt = partner; // 10★ to partner first
+      } else {
+        star = Math.max(...avail); tgt = unrated[rand(0,unrated.length-1)];
+      }
+    } else if(s==='sharkbait'||s==='bouncer'||s==='shadow'||s==='outsider_a'||s==='outsider_b') {
+      // Dump lowest on king/leader, save high
+      const king = G.lk;
+      const lowestAvail = Math.min(...avail);
+      if(king !== null && king !== i && unrated.includes(king) && lowestAvail <= 3) {
+        star = lowestAvail; tgt = king;
+      } else { star = Math.max(...avail); tgt = i; } // can't rate self...
+      // Actually can't rate self — pick random unrated
+      if(tgt === i) tgt = unrated[rand(0,unrated.length-1)];
+    } else if(s==='settler') {
+      const partner = G.strats.findIndex(st=>st==='diplomat_b');
+      if(partner>=0 && unrated.includes(partner)) {
+        star = Math.max(...avail); tgt = partner;
+      } else { star = Math.max(...avail); tgt = unrated[rand(0,unrated.length-1)]; }
+    } else if(s==='newmoon') {
+      // SURGICAL: lowest rating → whoever's closest to winning. Highest → self (can't, so ally)
+      const lowest = Math.min(...avail);
+      const highest = Math.max(...avail);
+      // Find biggest threat
+      let threatIdx=-1, threatScore=-1;
+      for(const j of unrated) {
+        const ts = (G.chairScores[j]||0)/CHAIR_SCORE_WIN + repAvg(G.reps[j],j)/10;
+        if(ts>threatScore){threatScore=ts;threatIdx=j;}
+      }
+      if(lowest <= 3 && threatIdx >= 0) {
+        star = lowest; tgt = threatIdx; // 1★ BOMB on the leader
+      } else {
+        star = highest; tgt = unrated[rand(0,unrated.length-1)]; // give best to someone random
+      }
+    } else if(s==='sleeper') {
+      if(G.round < 70 && avail.length > 3) continue; // hoard — skip this round
+      star = Math.max(...avail); tgt = unrated[rand(0,unrated.length-1)];
+    } else {
+      // Default: play highest available to random unrated player
+      star = Math.max(...avail); tgt = unrated[rand(0,unrated.length-1)];
+    }
+
+    // Assign rating
+    G.reps[tgt].push(star);
+    G.usedRatings[i].add(star);
+    G.ratedPlayers[i].add(tgt);
+    roundRatings[star] = (roundRatings[star]||0) + 1;
+    if(star >= 10) { G.tsg[i] = tgt; const key=i+'→'+tgt; G.tsg_all[key]=(G.tsg_all[key]||0)+1; }
+    // BLIND: target doesn't know the value. Log shows ??? for suspense.
+    addLog(`<span style="color:#a78bfa">📤 P${i} rates P${tgt} → <span title="${star}★" style="cursor:help">???</span></span>`);
+  }
+  G.ratingHistory.push(roundRatings);
+  // Track market prices: use actual trade prices where available, else last known
+  const prices = {};
+  const lastPrices = G.ratingPrices.length > 0 ? G.ratingPrices[G.ratingPrices.length-1] : {};
+  for(let s=1;s<=10;s++) {
+    if(G.marketPrices && G.marketPrices[s]) prices[s] = G.marketPrices[s]; // last trade price
+    else if(lastPrices[s]) prices[s] = lastPrices[s]; // carry forward
+    else prices[s] = 1; // starting: all $1
+  }
+  G.ratingPrices.push({...prices});
+
+  // Store state
+  G.lastBids = bids;
+  G.lastScores = scores;
+  G.seatOccupants = {};
+  G.blocked = blocked;
+  for(let i=0;i<n;i++) if(scores[i]>0) G.seatOccupants[bids[i]]=i;
+  G.lb = [...bids];
+
+  // === Phase 4: SHARE MARKET — trade player stocks ===
+  // Strategy → share behavior mapping
+  const SHARE_MAP = {
+    vulture:'vulture', raider:'raider', thug:'raider', daytrader:'daytrader',
+    kingslayer:'mogul', regulator:'mogul', arbiter:'mogul',
+    snitch:'pump_dump', grifter:'pump_dump', hustler:'pump_dump',
+    whale:'investor', quant:'portfolio', patron:'kingmaker',
+    phantom:'freedom', drifter:'freedom', sleeper:'freedom', collector:'investor', apex:'apex', stalker:'stalker', newmoon:'freedom',  // freedom seekers + collector + apex + stalker + new moon
+    settler:'investor'  // pushes to 8/10
+  };
+  function getShareBehavior(strat) { return SHARE_MAP[strat] || 'default'; }
+
+  // Villain mechanics: Notorious bonus
+  for(let i=0;i<n;i++) {
+    const ra = repAvg(G.reps[i],i) || 5;
+    if(ra < 3.5) { G.chips[i] += 3; } // Notorious: +3 chips/round
+  }
+
+  if(r >= 1) {
+    // Pre-compute threat scores ONCE per round (not per buyer)
+    const _threats = new Float32Array(n);
+    for(let t=0;t<n;t++) {
+      let ts = 0;
+      const hist = G.seatHistory[t]||[];
+      // Only check the seat they're currently at (not all 10)
+      const curSeat = G.lb[t]||0;
+      if(curSeat >= 2) {
+        const need={2:16,3:24,4:32,5:40,6:48,7:56,8:64,9:72,10:80}[curSeat]||30;
+        let streak=0;
+        for(let h=hist.length-1;h>=0;h--) { if(hist[h]===curSeat) streak++; else break; }
+        ts = Math.max(ts, streak/need);
+      }
+      if(G.lk===t) ts = Math.max(ts, G.ck/DYNASTY);
+      ts = Math.max(ts, G.chairScores[t]/CHAIR_SCORE_WIN);
+      const uniqueCount = Object.keys(G.uniqueSeats[t]||{}).length;
+      ts = Math.max(ts, uniqueCount/N_SEATS);
+      _threats[t] = ts;
+    }
+
+    // Only 4-6 players trade per round (not all 12)
+    const shuffled = Array.from({length:n},(_,i)=>i).sort(()=>Math.random()-0.5);
+    const maxTraders = Math.min(6, n);
+    for(let _ti=0; _ti<maxTraders; _ti++) {
+      const buyer = shuffled[_ti];
+      const sb = getShareBehavior(G.strats[buyer]);
+      const selfOwned = G.shares[buyer][buyer];
+      const buyerRep = repAvg(G.reps[buyer],buyer) || 5;
+      const villainDiscount = buyerRep < 2.5 ? 0.5 : 1.0;
+
+      // Helper: try to buy own share
+      const buySelfShare = (despMult) => {
+        for(let seller=0;seller<n;seller++) {
+          if(seller===buyer || G.shares[seller][buyer]<=0) continue;
+          const base = G.sharePrices[buyer] || 10;
+          const repM = 1 + (buyerRep)/10;
+          let ask = base * repM * (0.8+Math.random()*0.4) * villainDiscount;
+          const so = G.shares[buyer][buyer]; // re-read in case changed
+          const desp = so<3?2.5:(so<5?1.5:1.2);
+          const maxPay = G.chips[buyer] * 0.15 * desp * (despMult||1);
+          if(maxPay>=ask && G.chips[buyer]>=ask) {
+            G.chips[buyer]-=ask; G.chips[seller]+=ask;
+            G.shares[seller][buyer]--; G.shares[buyer][buyer]++;
+            G.sharePrices[buyer]=ask;
+            addLog(`<span style="color:#00d2ff">📊 P${buyer} buys own share from P${seller} for $${ask.toFixed(1)} (${G.shares[buyer][buyer]}/10)</span>`);
+            return true;
+          }
+        }
+        return false;
+      };
+
+      // Helper: buy share of target
+      const buyTargetShare = (t, maxSpendPct, label, color) => {
+        for(let seller=0;seller<n;seller++) {
+          if(seller===buyer||seller===t) continue;
+          if(G.shares[seller][t]<=0) continue;
+          const ask=(G.sharePrices[t]||10)*(0.8+Math.random()*0.4);
+          if(G.chips[buyer]>=ask && ask<G.chips[buyer]*maxSpendPct) {
+            G.chips[buyer]-=ask; G.chips[seller]+=ask;
+            G.shares[seller][t]--; G.shares[buyer][t]++;
+            G.sharePrices[t]=ask;
+            addLog(`<span style="color:${color}">${label} P${buyer} buys P${t} share for $${ask.toFixed(1)} (holds ${G.shares[buyer][t]})</span>`);
+            return true;
+          }
+        }
+        return false;
+      };
+
+      // === VULTURE: gouge sell-backs ===
+      if(sb==='vulture' && r>=50) {
+        for(let t=0;t<n;t++) {
+          if(t===buyer||G.shares[buyer][t]<=0) continue;
+          if(G.shares[t][t]<6 && G.chips[t]>=5) {
+            const ask=(G.sharePrices[t]||10)*(1.5+Math.random()*0.5);
+            if(G.chips[t]>=ask) {
+              G.chips[t]-=ask; G.chips[buyer]+=ask;
+              G.shares[buyer][t]--; G.shares[t][t]++;
+              G.sharePrices[t]=ask;
+              addLog(`<span style="color:#6c5ce7">🦅 VULTURE P${buyer} sells P${t}'s share BACK for $${ask.toFixed(1)} (gouge!)</span>`);
+              break;
+            }
+          }
+        }
+        continue;
+      }
+
+      // === DAYTRADER: mortgage + moon bets ===
+      if(sb==='daytrader') {
+        if(G.shares[buyer][buyer]>0 && G.chips[buyer]<50) {
+          for(let b2=0;b2<n;b2++) {
+            if(b2===buyer) continue;
+            const bid=(G.sharePrices[buyer]||10)*0.8;
+            if(G.chips[b2]>=bid) {
+              G.chips[b2]-=bid; G.chips[buyer]+=bid;
+              G.shares[buyer][buyer]--; G.shares[b2][buyer]++;
+              G.sharePrices[buyer]=bid;
+              addLog(`<span style="color:#00b894">📈 P${buyer} MORTGAGES share for $${bid.toFixed(1)}</span>`);
+              break;
+            }
+          }
+        }
+        let bestT=-1,bestS=0;
+        for(let t=0;t<n;t++) {
+          if(t===buyer) continue;
+          const tSelf=G.shares[t][t];
+          const moon=tSelf===5?10:(tSelf===4?7:(tSelf===3?3:0));
+          const wM=Math.min(3,G.chips[t]/100);
+          const sc=moon*(1+wM);
+          if(sc>bestS&&G.shares[buyer][t]<4){bestS=sc;bestT=t;}
+        }
+        if(bestT>=0&&bestS>2) buyTargetShare(bestT,0.4,'📈 MOON','#00b894');
+        continue;
+      }
+
+      // === INVESTOR: buy shares of high-rep players, push to 8/10 self ===
+      if(sb==='investor') {
+        if(selfOwned<8) { buySelfShare(selfOwned>=6?2:1); continue; }
+        let bestT=-1,bestRep=0;
+        for(let t=0;t<n;t++) {
+          if(t===buyer) continue;
+          const tr=repAvg(G.reps[t],t)||0;
+          if(tr>bestRep&&G.shares[buyer][t]<4){bestRep=tr;bestT=t;}
+        }
+        if(bestT>=0&&bestRep>5) buyTargetShare(bestT,0.2,'💎 INVEST','#ffd93d');
+        continue;
+      }
+
+      // === PORTFOLIO: diversify across all ===
+      if(sb==='portfolio') {
+        if(selfOwned<6) { buySelfShare(1); continue; }
+        const least=Array.from({length:n},(_,t)=>t)
+          .filter(t=>t!==buyer)
+          .sort((a,b)=>G.shares[buyer][a]-G.shares[buyer][b]);
+        if(least.length) buyTargetShare(least[0],0.1,'📊 DIVERSIFY','#74b9ff');
+        continue;
+      }
+
+      // === KINGMAKER: buy shares of partner/ally ===
+      if(sb==='kingmaker') {
+        if(selfOwned<6) { buySelfShare(1); continue; }
+        // Find player with closest strategy name (crude ally detection)
+        let ally=-1,bestChips=0;
+        for(let t=0;t<n;t++) {
+          if(t===buyer) continue;
+          if(G.chips[t]>bestChips&&G.shares[buyer][t]<5){bestChips=G.chips[t];ally=t;}
+        }
+        if(ally>=0) buyTargetShare(ally,0.2,'👑 KINGMAKE','#a78bfa');
+        continue;
+      }
+
+      // === PUMP & DUMP: inflate then sell ===
+      if(sb==='pump_dump') {
+        if(selfOwned<6) { buySelfShare(1); continue; }
+        // Dump phase: sell any holding at profit
+        let dumped=false;
+        for(let t=0;t<n;t++) {
+          if(t===buyer||G.shares[buyer][t]<2) continue;
+          if(G.sharePrices[t]>20) {
+            for(let b2=0;b2<n;b2++) {
+              if(b2===buyer) continue;
+              const bid=G.sharePrices[t]*(0.9+Math.random()*0.2);
+              if(G.chips[b2]>=bid) {
+                G.chips[b2]-=bid; G.chips[buyer]+=bid;
+                G.shares[buyer][t]--; G.shares[b2][t]++;
+                G.sharePrices[t]=bid;
+                addLog(`<span style="color:#8e44ad">🃏 P${buyer} DUMPS P${t} share for $${bid.toFixed(1)}</span>`);
+                dumped=true; break;
+              }
+            }
+            if(dumped) break;
+          }
+        }
+        if(!dumped) {
+          // Pump phase: buy cheapest stocks
+          const cheapest=Array.from({length:n},(_,t)=>t)
+            .filter(t=>t!==buyer&&G.shares[buyer][t]<3)
+            .sort((a,b)=>G.sharePrices[a]-G.sharePrices[b]);
+          if(cheapest.length) buyTargetShare(cheapest[0],0.15,'🃏 PUMP','#8e44ad');
+        }
+        continue;
+      }
+
+      // === MOGUL: reactive portfolio — push to 7/10 self for rep floor ===
+      if(sb==='mogul') {
+        if(selfOwned<7) { buySelfShare(selfOwned>=6?1.8:1.5); continue; }
+        // Find biggest threats
+        const threats=[];
+        for(let t=0;t<n;t++) {
+          if(t===buyer) continue;
+          threats.push({t, ts:_threats[t], held:G.shares[buyer][t]});
+        }
+        threats.sort((a,b)=>b.ts-a.ts);
+        let bought=false;
+        for(const {t,ts,held} of threats.slice(0,3)) {
+          if(ts<0.3) break;
+          if(held>=6) continue;
+          const maxPct=0.15+ts*0.2;
+          bought=buyTargetShare(t,maxPct,'🗡️ MOGUL','#c0392b');
+          if(bought) break;
+        }
+        continue;
+      }
+
+      // === RAIDER: hostile takeover ===
+      if(sb==='raider') {
+        if(selfOwned<6) { buySelfShare(1); continue; }
+        let bestT=-1,bestTh=0;
+        for(let t=0;t<n;t++) {
+          if(t===buyer) continue;
+          const th=_threats[t];
+          if(th>bestTh&&G.shares[buyer][t]<6){bestTh=th;bestT=t;}
+        }
+        if(bestT>=0&&bestTh>0.15) buyTargetShare(bestT,0.3,'🦅 RAID','#d63031');
+        else if(selfOwned<6) buySelfShare(1);
+        continue;
+      }
+
+      // === STALKER: pure parasite — buy target shares first, self-ownership only in endgame ===
+      if(sb==='stalker') {
+        // Find most predictable target
+        let bestPred=-1, bestRepeat=0;
+        for(let t=0;t<n;t++) {
+          if(t===buyer) continue;
+          const hist = G.seatHistory ? G.seatHistory[t] : [];
+          if(hist.length < 3) continue;
+          const lastSeat = hist[hist.length-1];
+          let repeats=0;
+          for(let h=Math.max(0,hist.length-10);h<hist.length;h++) if(hist[h]===lastSeat) repeats++;
+          if(repeats>bestRepeat){bestRepeat=repeats;bestPred=t;}
+        }
+        // Late game (200+): push for 6/10 self to unlock win gate
+        if(G.round >= 200 && selfOwned < 6) { buySelfShare(2.0); continue; }
+        // Otherwise: invest in target — the host feeds the parasite
+        if(bestPred>=0 && G.shares[buyer][bestPred]<6) {
+          buyTargetShare(bestPred, 0.25, '🔍 STALKING', '#00cec9');
+        }
+        continue;
+      }
+
+      // === APEX: push to 8/10, then invest in best reader for dividends ===
+      if(sb==='apex') {
+        if(selfOwned<8) { buySelfShare(selfOwned>=6?2.5:1.5); continue; }
+        // Find best reader by HR earnings
+        let bestReader=-1, bestEarn=0;
+        for(let t=0;t<n;t++) {
+          if(t===buyer) continue;
+          const earn = G.hrEarnings[t]||0;
+          if(earn>bestEarn&&G.shares[buyer][t]<4){bestEarn=earn;bestReader=t;}
+        }
+        // Also consider buying shares of whoever is closest to winning (defensive)
+        let threat=-1, bestTh=0;
+        for(let t=0;t<n;t++) {
+          if(t===buyer) continue;
+          const th = _threats[t];
+          if(th>bestTh&&G.shares[buyer][t]<6){bestTh=th;threat=t;}
+        }
+        // Prioritize: defensive takeover if threat > 0.6, else dividend investment
+        if(threat>=0 && bestTh>0.6) {
+          buyTargetShare(threat, 0.25, '🐉 APEX DEFENSE', '#e74c3c');
+        } else if(bestReader>=0 && bestEarn>100) {
+          buyTargetShare(bestReader, 0.15, '🐉 APEX INVEST', '#e74c3c');
+        }
+        continue;
+      }
+
+      // === FREEDOM: push to 10/10 at all costs ===
+      if(sb==='freedom') {
+        if(selfOwned<10) { buySelfShare(selfOwned>=8?3:selfOwned>=6?2:1); continue; }
+        // Already free — invest in others for dividends
+        let bestT=-1,bestRep=0;
+        for(let t=0;t<n;t++) {
+          if(t===buyer) continue;
+          const tr=repAvg(G.reps[t],t)||0;
+          if(tr>bestRep&&G.shares[buyer][t]<4){bestRep=tr;bestT=t;}
+        }
+        if(bestT>=0) buyTargetShare(bestT,0.15,'🗽 FREE','#2ecc71');
+        continue;
+      }
+
+      // === DEFAULT: buy own, then opportunistic hostile ===
+      if(selfOwned<6) { buySelfShare(1); }
+      else {
+        let target=-1,bestThr=0;
+        for(let t=0;t<n;t++) {
+          if(t===buyer) continue;
+          const th=G.chairScores[t]/CHAIR_SCORE_WIN+(Object.keys(G.uniqueSeats[t]||{}).length/N_SEATS);
+          if(th>bestThr&&G.shares[buyer][t]<3){bestThr=th;target=t;}
+        }
+        if(target>=0&&bestThr>0.5&&Math.random()<0.3) {
+          buyTargetShare(target,0.1,'🦈 HOSTILE','#ff7675');
+        }
+      }
+    }
+
+    // === DIVIDENDS: shareholders earn % of player's round income ===
+    // Each round, players with positive earnings distribute 10% to shareholders
+    for(let i=0;i<n;i++) {
+      const roundEarning = G.chips[i] - (G._prevChips?.[i] || G.chips[i]);
+      if(roundEarning > 5) { // only pay dividends on meaningful earnings
+        const dividendPool = roundEarning * 0.10; // 10% of earnings go to shareholders
+        let totalExternal = 0;
+        for(let j=0;j<n;j++) { if(j!==i) totalExternal += G.shares[j][i]; }
+        if(totalExternal > 0) {
+          for(let j=0;j<n;j++) {
+            if(j===i || G.shares[j][i]<=0) continue;
+            const payout = (G.shares[j][i] / totalExternal) * dividendPool;
+            if(payout >= 0.5) {
+              G.chips[j] += payout;
+              G.chips[i] -= payout;
+            }
+          }
+        }
+      }
+    }
+    // Track previous chips for dividend calculation
+    if(!G._prevChips) G._prevChips = Array(n).fill(25);
+    for(let i=0;i<n;i++) G._prevChips[i] = G.chips[i];
+
+    // === SLAVERY PENALTY: 0 self-shares = rep decay ===
+    for(let i=0;i<n;i++) {
+      if(G.shares[i][i] === 0 && G.reps[i].length > 0) {
+        G.reps[i].push(1); // push a 1★ rating as rep decay
+        if(!G.autoPlay && !G.fastForward) addLog(`<span style="color:#ff4757">⛓️ P${i} owns 0% of themselves — rep decays!</span>`);
+      }
+    }
+
+    // === MAJORITY TAX (Fed margin requirement) ===
+    // Holding 6+ shares of ANY player costs 5% of that stock's price per round → bank
+    const MAJORITY_TAX_PCT = 0.05;
+    for(let i2=0;i2<n;i2++) {
+      let tax = 0;
+      for(let t=0;t<n;t++) {
+        if(G.shares[i2][t] >= 6) tax += G.sharePrices[t] * MAJORITY_TAX_PCT;
+      }
+      if(tax > 0) {
+        const paid = Math.min(tax, G.chips[i2]);
+        G.chips[i2] -= paid;
+        G.bankBudget += paid;
+      }
+    }
+
+    // === Phase 5: BANK — Active Market Maker ===
+    G.bankBudget += 25;
+    const BANK_MAX_PER_PLAYER = 2;
+    const totalBankShares = G.bankShares.reduce((a,b)=>a+b,0);
+
+    // SHARE AUCTION every 10 rounds: bank auctions ALL held shares
+    if(totalBankShares > 0 && r % 10 === 0 && r > 0) {
+      for(let si=0;si<n;si++) {
+        if(G.bankShares[si] <= 0) continue;
+        const reserve = Math.max(5, (G.sharePrices[si]||10) * 0.8);
+        const bidders = [];
+        for(let j=0;j<n;j++) {
+          if(G.chips[j] < reserve) continue;
+          // Self-buyback: desperate players bid high
+          const isSelf = (j === si);
+          // Less willing to sell to high-ownership buyers
+          const buyerOwn = isSelf ? G.shares[j][j] : G.shares[j][si];
+          const reluctance = buyerOwn >= 8 ? 0.5 : buyerOwn >= 6 ? 0.7 : 1.0;
+          const selfNeed = isSelf ? Math.max(0, (6 - G.shares[j][j])) * 0.12 * reluctance : 0;
+          // Hostile: raiders/moguls bid for control
+          const hostileUrge = (!isSelf && G.shares[j][si] >= 3) ? 0.2 : 0.05;
+          const urgency = Math.max(selfNeed, hostileUrge);
+          const maxBid = G.chips[j] * urgency * (0.8 + Math.random() * 0.4);
+          if(maxBid >= reserve) bidders.push({buyer:j, bid:maxBid, isSelf});
+        }
+        if(bidders.length === 0) continue;
+        bidders.sort((a,b) => b.bid - a.bid);
+        const w = bidders[0];
+        const price = Math.round(w.bid * 10) / 10;
+        G.chips[w.buyer] -= price;
+        G.bankBudget += price;
+        G.bankShares[si]--;
+        G.shares[w.buyer][si]++;
+        G.sharePrices[si] = price;
+        const tag = w.isSelf ? '🔓 BUYBACK' : '🔨 SOLD';
+        addLog(`<span style="color:#ffd700;font-weight:bold">🏦 SHARE AUCTION: P${si} share → P${w.buyer} for $${price.toFixed(0)}! (${bidders.length} bidders) ${tag}</span>`);
+      }
+    }
+
+    // Quiet sells between auctions — ownership-aware pricing
+    // Bank charges MORE as buyer's self-ownership increases (freedom tax)
+    const sellRate = r < 100 ? 1 : r > 200 ? 4 : 2;
+    if(totalBankShares > 0 && r % 10 !== 0) {
+      for(let sells=0; sells<sellRate; sells++) {
+        let bestT=-1, bestD=0;
+        for(let i=0;i<n;i++) {
+          if(G.bankShares[i]<=0) continue;
+          const d = (6-G.shares[i][i])*(G.chips[i]/50);
+          if(d>bestD){bestD=d;bestT=i;}
+        }
+        if(bestT<0) break;
+        // Freedom tax: price scales with buyer's self-ownership
+        // 0-5/10 = 1.1-1.4x, 6/10 = 1.5x, 7/10 = 2x, 8/10 = 3x, 9/10 = 5x
+        const freedomMult = (so) => so <= 5 ? 1.1+so*0.06 : so===6 ? 1.5 : so===7 ? 2.0 : so===8 ? 3.0 : 5.0;
+        // Self-buyback with freedom tax
+        const selfOwn = G.shares[bestT][bestT];
+        const ask = (G.sharePrices[bestT]||10) * freedomMult(selfOwn) * (1 + Math.random()*0.2);
+        if(selfOwn < 10 && G.chips[bestT]>=ask) {
+          G.chips[bestT]-=ask; G.bankBudget+=ask;
+          G.bankShares[bestT]--; G.shares[bestT][bestT]++;
+          G.sharePrices[bestT]=ask;
+          if(selfOwn >= 7) addLog(`<span style="color:#ffd700">🏦💰 FREEDOM TAX: P${bestT} buys back share #${selfOwn+1} for $${ask.toFixed(0)}! (${freedomMult(selfOwn)}x markup)</span>`);
+          continue;
+        }
+        // Third-party with their own freedom tax
+        for(let b=0;b<n;b++) {
+          if(b===bestT) continue;
+          const bOwn = G.shares[b][bestT];
+          const ba = (G.sharePrices[bestT]||10) * freedomMult(bOwn) * 0.9;
+          if(G.chips[b]>=ba&&bOwn<6){
+            G.chips[b]-=ba;G.bankBudget+=ba;
+            G.bankShares[bestT]--;G.shares[b][bestT]++;
+            G.sharePrices[bestT]=ba;
+            break;
+          }
+        }
+      }
+    }
+
+    // BANK BUY: lean buy-heavy early game, taper late
+    const buyRate = r < 100 ? 10 : r > 200 ? 2 : 4; // early:10, mid:4, late:2
+    if(totalBankShares < BANK_MAX_PER_PLAYER * n * 0.3) {
+      const bankTargets = Array.from({length:n}, (_, i) => {
+        const ra = repAvg(G.reps[i],i) || 1;
+        const seatVal = (G.lb[i]||1) / N_SEATS;
+        const wealth = Math.sqrt(Math.max(1, G.chips[i]));
+        const threat = (G.bankShares[i]>=BANK_MAX_PER_PLAYER) ? 0 : 1;
+        return { p:i, score: ra * seatVal * wealth * threat };
+      }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
+
+      for(let action=0; action<buyRate; action++) {
+        if(G.bankBudget<1 || action>=bankTargets.length) break;
+        const tp = bankTargets[action].p;
+        if(G.bankShares[tp]>=BANK_MAX_PER_PLAYER) continue;
+        for(let seller=0;seller<n;seller++) {
+          if(G.shares[seller][tp]<=0 || seller===tp) continue;
+          const ask=(G.sharePrices[tp]||1)*(0.9+Math.random()*0.2);
+          if(G.bankBudget>=ask) {
+            G.bankBudget-=ask; G.chips[seller]+=ask;
+            G.shares[seller][tp]--; G.bankShares[tp]++;
+            G.sharePrices[tp]=ask;
+            addLog(`<span style="color:#ffeaa7">🏦 BANK acquires P${tp} share from P${seller} for $${ask.toFixed(0)} (holds ${G.bankShares[tp]}/${BANK_MAX_PER_PLAYER})</span>`);
+            break;
+          }
+        }
+      }
+    }
+
+    // Book-value drift: share price gravitates toward player fundamentals
+    // Book value = chips/5 + chair_value + rep_value + betting_premium
+    for(let i=0;i<n;i++) {
+      const chipVal = G.chips[i] / 5; // each share = 1/5th of wealth (premium over 1/10)
+      const chairVal = G.chairScores[i] / 10;
+      const repVal = (repAvg(G.reps[i], i)||0) * 15;
+      const betPremium = (G.hrEarnings[i]||0) > 0 ? G.hrEarnings[i] * 0.1 : 0; // good readers get a premium
+      const bookValue = Math.max(10, chipVal + chairVal + repVal + betPremium);
+      // Drift 15% toward book value each round (faster convergence)
+      G.sharePrices[i] = G.sharePrices[i] * 0.85 + bookValue * 0.15;
+    }
+
+    // Only guard against NaN/Infinity — no price caps
+    for(let i=0;i<n;i++) {
+      if(!isFinite(G.sharePrices[i])) G.sharePrices[i] = 10;
+      if(G.sharePrices[i] < 1) G.sharePrices[i] = 1;
+    }
+    // Record share prices + chips
+    const priceSnap = {};
+    for(let i=0;i<n;i++) priceSnap[i] = G.sharePrices[i];
+    G.sharePriceHistory.push(priceSnap);
+    const chipSnap = {};
+    for(let i=0;i<n;i++) chipSnap[i] = G.chips[i];
+    G.chipHistory.push(chipSnap);
+    // Chair score history
+    const csSnap = {};
+    for(let i=0;i<n;i++) csSnap[i] = G.chairScores[i];
+    G.chairHistory.push(csSnap);
+  }
+
+  // King tracking
+  let king = null;
+  for(let i=0;i<n;i++) if(bids[i]===1&&scores[i]>0) king=i;
+  if(king!==null&&king===G.lk) G.ck++;
+  else if(king!==null) G.ck=1;
+  else G.ck=0;
+  G.lk = king;
+
+  if(king!==null) addLog(`👑 P${king} (${STRAT_NAMES[G.strats[king]]}) is King! (${G.ck}/${DYNASTY})`);
+
+  // === SEATED INCOME: seat# every seat# turns + crown bonus ===
+  // Seat 10: $10 every 10 turns. Seat 1: $3 every turn. ~$1/turn base.
+  for(let i=0;i<n;i++) {
+    if(scores[i] > 0) {
+      const seat = bids[i];
+      if(r % seat === 0) {
+        const base = Math.round(seat * 1.5); // $2 for king, $15 for seat 10
+        const crown = seat <= 3 ? (4 - seat) * 2 : 0; // king +6, seat2 +4, seat3 +2
+        G.chips[i] += base + crown;
+      }
+    }
+  }
+
+  // === WIN CHECKS (all mid-game triggers except Mogul) ===
+  // WIN GATE: need 6+ shares of yourself to trigger ANY win condition
+  const canWin = (i) => G.shares[i][i] >= 6;
+  const gateMsg = (i) => `(owns ${G.shares[i][i]}/10 shares — need 6)`;
+
+  // Skip win checks on round 0 — no one has earned anything yet
+  if(G.round >= 1) {
+    // 1. DYNASTY
+    if(G.ck>=DYNASTY) {
+      if(canWin(king)) { endGame(king,'dynasty',`${DYNASTY} consecutive rounds as King! ${gateMsg(king)}`); return; }
+      else addLog(`<span style="color:#ff9f43">⚠️ P${king} hit Dynasty but BLOCKED — ${gateMsg(king)}</span>`);
+    }
+
+    // 2. ALLIANCE (4+ player 10★ loop, must be SEATED in consecutive positions, min round 5)
+    if(G.round < 5) {} else for(let start=0;start<n;start++) {
+      if(!(start in G.tsg)) continue;
+      const vis=[start]; let cur=G.tsg[start]; const seen=new Set([start]);
+      while(cur!==undefined&&!seen.has(cur)) { seen.add(cur); vis.push(cur); cur=G.tsg[cur]; }
+      if(cur===start&&vis.length>=4) {
+        const seatedPos = vis.filter(v => scores[v] > 0).map(v => bids[v]).sort((a,b)=>a-b);
+        if(seatedPos.length >= 4) {
+          let hasRun = false;
+          for(let pi=0; pi<seatedPos.length; pi++) {
+            let run = [seatedPos[pi]];
+            for(let pj=pi+1; pj<seatedPos.length; pj++) {
+              if(seatedPos[pj] === run[run.length-1]+1) run.push(seatedPos[pj]);
+            }
+            if(run.length >= 4) { hasRun = true; break; }
+          }
+          if(hasRun) {
+            if(canWin(start)) { endGame(start,'alliance',`10★ loop: ${vis.map(v=>'P'+v).join('→')}→P${start} ${gateMsg(start)}`); return; }
+            else { addLog(`<span style="color:#ff9f43">⚠️ P${start} hit Alliance but BLOCKED — ${gateMsg(start)}</span>`); break; }
+          }
+        }
+      }
+    }
+
+    // 3. FORTRESS (consecutive streaks) — requires rep > 5.0
+    const FORTRESS_REP_GATE = 5.0;
+    for(let i=0;i<n;i++) {
+      const repAvg = G.reps[i].length ? G.reps[i].reduce((a,b)=>a+b,0)/G.reps[i].length : 5.0;
+      if(repAvg < FORTRESS_REP_GATE) continue;
+      for(let pos=2;pos<=N_SEATS;pos++) {
+        const {window,need} = fortressReq(pos);
+        const hist = G.seatHistory[i];
+        if(hist.length<need) continue;
+        // Count consecutive from end
+        let streak = 0;
+        for(let h=hist.length-1; h>=0; h--) {
+          if(hist[h]===pos) streak++; else break;
+        }
+        if(streak>=need) {
+          if(canWin(i)) { endGame(i,'fortress',`Seat ${pos}: ${streak} consecutive (need ${need}) rep:${repAvg.toFixed(1)} ${gateMsg(i)}`); return; }
+          else { addLog(`<span style="color:#ff9f43">⚠️ P${i} hit Fortress but BLOCKED — ${gateMsg(i)}</span>`); }
+        }
+      }
+    }
+
+    // 4. CHAIR SCORE (750+ pts)
+    for(let i=0;i<n;i++) {
+      if(G.chairScores[i]>=CHAIR_SCORE_WIN) {
+        if(canWin(i)) { endGame(i,'chair_score',`${G.chairScores[i]} chair points! ${gateMsg(i)}`); return; }
+        else addLog(`<span style="color:#ff9f43">⚠️ P${i} hit Chair Score but BLOCKED — ${gateMsg(i)}</span>`);
+      }
+    }
+
+    // 5. HELIOCENTRIC — 3+ active incoming 10★ from DIFFERENT players = instant win
+    if(G.tenHistory && G.tenHistory.length > 0) {
+      for(let i=0;i<n;i++) {
+        // Count unique players who gave me an active 10★
+        const incoming = new Set();
+        for(const entry of G.tenHistory) {
+          if(entry.to === i && r - entry.round <= 75) {
+            incoming.add(entry.from);
+          }
+        }
+        if(incoming.size >= 5) {
+          if(canWin(i)) { endGame(i,'heliocentric',`☀️ ${incoming.size} players orbit P${i} with 10★! ${gateMsg(i)}`); return; }
+          else addLog(`<span style="color:#ff9f43">⚠️ P${i} is Heliocentric (${incoming.size} 10★) but BLOCKED — ${gateMsg(i)}</span>`);
+        }
+      }
+    }
+
+    // 6. REP VICTORY (avg rep >= 8.0 with 10+ ratings)
+    if(G.round >= 10) {
+      for(let i=0;i<n;i++) {
+        if(G.reps[i].length >= 10) {
+          const avg = repAvg(G.reps[i],i);
+          if(avg >= REP_WIN) {
+            if(canWin(i)) { endGame(i,'rep_victory',`${avg.toFixed(1)}★ avg rep (${G.reps[i].length} ratings)! ${gateMsg(i)}`); return; }
+            else addLog(`<span style="color:#ff9f43">⚠️ P${i} hit Rep Victory (${avg.toFixed(1)}★) but BLOCKED — ${gateMsg(i)}</span>`);
+          }
+        }
+      }
+    }
+
+    // 7. FREEDOM (10/10 self-ownership = instant win, no gate needed)
+    for(let i=0;i<n;i++) {
+      if(G.shares[i][i] >= 10) {
+        endGame(i,'freedom',`10/10 self-ownership! Total sovereignty.`);
+        return;
+      }
+    }
+
+    // 8. BINGO (all 10 seats within last 25 rounds)
+    // BINGO: 10 unique seats IN A ROW (consecutive, no repeats)
+    for(let i=0;i<n;i++) {
+      const hist = G.seatHistory[i];
+      if(!hist || hist.length < N_SEATS) continue;
+      const consecUnique = new Set();
+      for(let h = hist.length-1; h >= 0; h--) {
+        if(hist[h] <= 0) break; // unseated = streak broken
+        if(consecUnique.has(hist[h])) break; // repeat = streak broken
+        consecUnique.add(hist[h]);
+      }
+      if(consecUnique.size >= N_SEATS) {
+        if(canWin(i)) { endGame(i,'bingo',`${N_SEATS} unique seats IN A ROW! ${gateMsg(i)}`); return; }
+        else addLog(`<span style="color:#ff9f43">⚠️ P${i} hit Bingo but BLOCKED — ${gateMsg(i)}</span>`);
+      }
+    }
+
+    // 8. TYCOON: majority ownership of 2+ different players, avg stock price >= $25
+    const TYCOON_MIN_AVG_PRICE = 25;
+    for(let i=0;i<n;i++) {
+      const majorityOf = [];
+      for(let t=0;t<n;t++) {
+        if(G.shares[i][t] >= 6) majorityOf.push(t);
+      }
+      if(majorityOf.length >= 2) {
+        const avgPrice = majorityOf.reduce((s,t) => s + G.sharePrices[t], 0) / majorityOf.length;
+        if(avgPrice >= TYCOON_MIN_AVG_PRICE) {
+          endGame(i,'tycoon',`Majority owner of ${majorityOf.map(t=>'P'+t).join(' & ')} (${majorityOf.length} players, avg $${avgPrice.toFixed(0)}/share)! ${gateMsg(i)}`);
+          return;
+        }
+      }
+    }
+  } // end win checks guard
+
+  G.round++;
+
+  // 7. MOGUL (fallback at end of game)
+  if(G.round>=N_ROUNDS) {
+    // Mogul: richest player WHO owns themselves. If nobody does, richest overall.
+    const eligible = Array.from({length:n},(_,i)=>i).filter(i=>canWin(i));
+    if(eligible.length > 0) {
+      const richest = eligible.reduce((a,b) => G.chips[a]>G.chips[b]?a:b);
+      endGame(richest,'mogul',`$${G.chips[richest].toFixed(0)} chips after ${N_ROUNDS} rounds ${gateMsg(richest)}`);
+    } else {
+      const richest = G.chips.indexOf(Math.max(...G.chips));
+      endGame(richest,'mogul',`$${G.chips[richest].toFixed(0)} chips — NO ONE owns themselves! ${gateMsg(richest)}`);
+    }
+    return;
+  }
+
+  render();
+}
+
+function endGame(winner, type, detail) {
+  // === MAJORITY OWNER OVERRIDE ===
+  // If someone owns 6+ shares of the winner, THEY steal the win
+  if(type !== 'mogul' && G.shares) {
+    let majorityOwner = -1;
+    let maxShares = 0;
+    for(let i = 0; i < G.n; i++) {
+      if(i === winner) continue;
+      if(G.shares[i][winner] >= 6 && G.shares[i][winner] > maxShares) {
+        majorityOwner = i;
+        maxShares = G.shares[i][winner];
+      }
+    }
+    if(majorityOwner >= 0) {
+      addLog(`<span style="color:#ff6b6b">🏴‍☠️ HOSTILE TAKEOVER! P${majorityOwner} (${STRAT_NAMES[G.strats[majorityOwner]]}) owns ${maxShares}/10 shares of P${winner} — STEALS THE WIN!</span>`);
+      detail = `TAKEOVER: P${majorityOwner} owned P${winner}'s victory. ${detail}`;
+      winner = majorityOwner;
+    }
+  }
+  G.over = true; G.winner = winner; G.winType = type;
+  stopAuto();
+  const labels = { dynasty:'🏰 DYNASTY', alliance:'🕊️ ALLIANCE', fortress:'🏗️ FORTRESS', chair_score:'🪑 CHAIR SCORE', heliocentric:'☀️ HELIOCENTRIC', rep_victory:'⭐ REP VICTORY', bingo:'🎯 BINGO', mogul:'💰 MOGUL', tycoon:'🏢 TYCOON', freedom:'🗽 FREEDOM' };
+  document.getElementById('win-type').textContent = labels[type]||type;
+  document.getElementById('win-player').textContent = `P${winner} — ${STRAT_NAMES[G.strats[winner]]}`;
+  document.getElementById('win-detail').textContent = `Round ${G.round}: ${detail}`;
+  document.getElementById('win-overlay').classList.add('show');
+  addLog(`<span class="log-win">🏆 ${labels[type]}: P${winner} (${STRAT_NAMES[G.strats[winner]]}) — ${detail}</span>`);
+
+  // Winner summary panel
+  const w = winner;
+  const selfShares = G.shares[w][w];
+  const totalOwned = G.shares[w].reduce((a,b)=>a+b,0);
+  const rep = G.reps[w].length > 0 ? (G.reps[w].slice(-15).reduce((a,b)=>a+b,0)/Math.min(15,G.reps[w].length)).toFixed(1) : '—';
+  const uniqueSeats = Object.keys(G.uniqueSeats[w]).length;
+  const hrPct = G.hrAttempts[w] > 0 ? ((G.hrHits[w]/G.hrAttempts[w])*100).toFixed(0) : '—';
+  const portfolio = [];
+  for(let t=0;t<N_PLAYERS;t++) { if(G.shares[w][t]>0 && t!==w) portfolio.push(`P${t}:${G.shares[w][t]}`); }
+  const el = document.getElementById('winner-panel');
+  if(el) {
+    el.style.display = 'block';
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+        <div style="text-align:center;">
+          <div style="font-size:2em;color:${STRAT_COLORS[G.strats[w]]}">${STRAT_NAMES[G.strats[w]]}</div>
+          <div style="font-size:2.5em;color:#ffd700;font-weight:bold;">P${w}</div>
+        </div>
+        <div style="flex:1;min-width:200px;">
+          <div style="font-size:1.5em;color:#ffd700;margin-bottom:8px;">${labels[type]||type}</div>
+          <div style="color:#aaa;margin-bottom:12px;">Round ${G.round} — ${detail}</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:0.9em;">
+            <div><span style="color:#666">💰 Chips</span><br><b style="color:#ffd93d">$${G.chips[w].toFixed(0)}</b></div>
+            <div><span style="color:#666">⭐ Rep</span><br><b style="color:#74b9ff">${rep}★</b></div>
+            <div><span style="color:#666">🪑 Chair</span><br><b style="color:#00ff88">${G.chairScores[w]}</b></div>
+            <div><span style="color:#666">🔗 Shares</span><br><b style="color:#a78bfa">${selfShares}/10 self</b></div>
+            <div><span style="color:#666">🎯 HR</span><br><b style="color:#ff6b6b">${hrPct}% (${G.hrHits[w]}/${G.hrAttempts[w]})</b></div>
+            <div><span style="color:#666">🗺️ Seats</span><br><b style="color:#ffa502">${uniqueSeats}/10</b></div>
+            <div><span style="color:#666">📊 Stock</span><br><b style="color:#2ed573">$${G.sharePrices[w].toFixed(0)}</b></div>
+            <div><span style="color:#666">💼 Portfolio</span><br><b style="color:#ccc">${portfolio.length>0?portfolio.join(' '):'none'}</b></div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  render();
+}
+
+function render() {
+  if(!G) return;
+  document.getElementById('status').innerHTML =
+    `Round ${G.round}/${N_ROUNDS} ` +
+    `<span style="color:#ffd700;font-size:0.75em">☀️4×10★</span> ` +
+    (G.over ? '— <b style="color:#ffd93d">GAME OVER</b>' : '');
+
+  // Seats
+  let seatsHtml = '';
+  for(let pos=1;pos<=N_SEATS;pos++) {
+    const occ = G.seatOccupants[pos];
+    const isOcc = occ!==undefined;
+    const colliders = G.lastBids.filter(b=>b===pos).length;
+    const isColl = colliders>=2 && !isOcc;
+    const isKing = pos===1 && isOcc;
+    const {window:fw,need:fn} = pos>=2 ? fortressReq(pos) : {window:0,need:0};
+    let cls = 'seat'; if(isOcc) cls+=' occupied'; if(isColl) cls+=' collision'; if(isKing) cls+=' king';
+    seatsHtml += `<div class="${cls}">
+      <div class="seat-num">${pos===1?'👑 ':''} Seat ${pos}</div>
+      <div class="seat-score">${N_SEATS+1-pos} pts</div>
+      ${pos>=2?`<div class="seat-fortress">${fn}/${fw}</div>`:'<div class="seat-fortress">Dynasty ${DYNASTY}</div>'}
+      <div class="seat-player" style="color:${isOcc?STRAT_COLORS[G.strats[occ]]:'#333'}">
+        ${isOcc?'P'+occ:(isColl?'💥':'—')}
+      </div>
+      ${isOcc?`<div class="seat-bid" style="color:${STRAT_COLORS[G.strats[occ]]}">${STRAT_NAMES[G.strats[occ]]}</div>`:''}
+    </div>`;
+  }
+  document.getElementById('seats').innerHTML = seatsHtml;
+
+  drawBidArena();
+  drawNetworkChart();
+  drawStatsTicker();
+  drawRepChart();
+  drawBingoChart();
+  drawRepMarket();
+  drawShareOwnership();
+  drawPortfolios();
+  drawSharePrices();
+  drawChipChart();
+  drawChairChart();
+  drawBettingStats();
+
+  // Players
+  const maxC = Math.max(1,...G.chips);
+  let html = '';
+  for(let i=0;i<N_PLAYERS;i++) {
+    const s = G.strats[i];
+    const avg = repAvg(G.reps[i],i);
+    const isW = G.over&&G.winner===i;
+    const isB = G.blocked.has(i) || G.lastScores[i]===0;
+    const selfShares = G.shares[i][i];
+    const chipStr = G.chips[i]>=1e6?(G.chips[i]/1e6).toFixed(1)+'M':G.chips[i]>=1000?(G.chips[i]/1000).toFixed(0)+'K':G.chips[i].toFixed(0);
+    html += `<div class="player-card ${isW?'winner':''} ${isB&&!isW?'blocked':''}" style="border-left:3px solid ${STRAT_COLORS[s]}">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="color:${STRAT_COLORS[s]};font-weight:bold;">P${i} ${G.lk===i?'👑':''}</span>
+        <span style="color:#888;font-size:0.9em;">$${chipStr}</span>
+      </div>
+      <div style="color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${STRAT_NAMES[s]}</div>
+      <div style="display:flex;justify-content:space-between;color:#666;font-size:0.9em;">
+        <span>★${avg.toFixed(1)}</span>
+        <span>🪑${G.chairScores[i]}</span>
+        <span>${selfShares}/${N_SEATS+1}</span>
+      </div>
+    </div>`;
+  }
+  document.getElementById('players').innerHTML = html;
+}
+
+function drawBidArena() {
+  const c = document.getElementById('bid-arena'), ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0, 0, W, H);
+  if (!G || !G.lastBids) return;
+
+  const n = N_PLAYERS, ns = N_SEATS;
+  const seatY = 80, playerY = 250;
+  const seatGap = (W - 120) / (ns - 1), seatX0 = 60;
+  const playerGap = (W - 100) / (n - 1), playerX0 = 50;
+
+  // Seat positions (fixed anchors at top)
+  const seatPos = [];
+  for (let s = 1; s <= ns; s++) {
+    seatPos[s] = { x: seatX0 + (s - 1) * seatGap, y: seatY };
+  }
+
+  // Player positions (bottom row)
+  const playerPos = [];
+  for (let i = 0; i < n; i++) {
+    playerPos[i] = { x: playerX0 + i * playerGap, y: playerY };
+  }
+
+  // Count bids per seat for collision detection
+  const bidCount = {};
+  for (let i = 0; i < n; i++) {
+    if (G.blocked && G.blocked.has && G.blocked.has(i)) continue;
+    const b = G.lastBids[i];
+    bidCount[b] = (bidCount[b] || 0) + 1;
+  }
+
+  // Draw bid lines (player → seat)
+  for (let i = 0; i < n; i++) {
+    const bid = G.lastBids[i];
+    if (!bid || bid < 1 || bid > ns) continue;
+    const px = playerPos[i].x, py = playerPos[i].y;
+    const sx = seatPos[bid].x, sy = seatPos[bid].y;
+    const isBlocked = G.blocked && G.blocked.has && G.blocked.has(i);
+    const isSeated = G.lastScores[i] > 0;
+    const isCollision = bidCount[bid] > 1;
+
+    ctx.beginPath();
+    ctx.moveTo(px, py - 12);
+
+    // Curved line (bezier)
+    const cpY = (py + sy) / 2 - 30 + (i % 3) * 10;
+    ctx.quadraticCurveTo(px + (sx - px) * 0.3, cpY, sx, sy + 18);
+
+    if (isBlocked) {
+      ctx.strokeStyle = 'rgba(255,50,50,0.3)';
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 1;
+    } else if (isSeated) {
+      ctx.strokeStyle = STRAT_COLORS[G.strats[i]] || '#6bcb77';
+      ctx.setLineDash([]);
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = STRAT_COLORS[G.strats[i]] || '#6bcb77';
+      ctx.shadowBlur = 6;
+    } else if (isCollision) {
+      ctx.strokeStyle = 'rgba(255,100,50,0.5)';
+      ctx.setLineDash([3, 3]);
+      ctx.lineWidth = 1.5;
+    } else {
+      ctx.strokeStyle = 'rgba(150,150,150,0.3)';
+      ctx.setLineDash([]);
+      ctx.lineWidth = 1;
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.shadowBlur = 0;
+  }
+
+  // Draw seat nodes (top)
+  for (let s = 1; s <= ns; s++) {
+    const sx = seatPos[s].x, sy = seatPos[s].y;
+    const occ = G.seatOccupants && G.seatOccupants[s];
+    const hasCollision = bidCount[s] > 1;
+
+    // Seat circle
+    ctx.beginPath();
+    ctx.arc(sx, sy, 18, 0, Math.PI * 2);
+    if (occ !== undefined) {
+      ctx.fillStyle = STRAT_COLORS[G.strats[occ]] || '#6bcb77';
+      ctx.shadowColor = STRAT_COLORS[G.strats[occ]]; ctx.shadowBlur = 8;
+    } else if (hasCollision) {
+      ctx.fillStyle = '#ff4444'; ctx.shadowColor = '#ff4444'; ctx.shadowBlur = 8;
+    } else {
+      ctx.fillStyle = '#333'; ctx.shadowBlur = 0;
+    }
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Seat number
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(s, sx, sy);
+
+    // Crown on seat 1
+    if (s === 1) {
+      ctx.fillStyle = '#ffd93d'; ctx.font = '14px serif';
+      ctx.fillText('👑', sx, sy - 26);
+    }
+
+    // Collision spark
+    if (hasCollision && occ === undefined) {
+      ctx.fillStyle = '#ff6644'; ctx.font = '10px monospace';
+      ctx.fillText('💥', sx, sy - 24);
+    }
+  }
+
+  // Draw player nodes (bottom)
+  for (let i = 0; i < n; i++) {
+    const px = playerPos[i].x, py = playerPos[i].y;
+    const isBlocked = G.blocked && G.blocked.has && G.blocked.has(i);
+    const isSeated = G.lastScores[i] > 0;
+
+    // Player circle
+    ctx.beginPath();
+    ctx.arc(px, py, 14, 0, Math.PI * 2);
+    ctx.fillStyle = isBlocked ? '#441111' : (STRAT_COLORS[G.strats[i]] || '#888');
+    ctx.globalAlpha = isBlocked ? 0.4 : 1;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // Player label
+    ctx.fillStyle = isBlocked ? '#666' : '#ddd';
+    ctx.font = '9px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('P' + i, px, py + 3);
+
+    // Strategy name below
+    ctx.fillStyle = '#666'; ctx.font = '7px monospace';
+    const sname = (STRAT_NAMES[G.strats[i]] || G.strats[i]).replace(/[🎲👻🕶️🕊️🔗🎯💀🧊📦🐍🦈⚔️🎪💤🏠]/g, '').trim();
+    ctx.fillText(sname.substring(0, 10), px, py + 25);
+
+    // Seat bid number above player
+    if (G.lastBids[i]) {
+      ctx.fillStyle = isSeated ? '#6bcb77' : '#ff6644';
+      ctx.font = 'bold 10px monospace';
+      ctx.fillText('→' + G.lastBids[i], px, py - 20);
+    }
+  }
+
+  // Title
+  ctx.fillStyle = '#888'; ctx.font = '10px monospace'; ctx.textAlign = 'left';
+  ctx.fillText('⚔️ Bid Arena — Round ' + (G.round || 0), 10, 16);
+
+  // Legend
+  ctx.textAlign = 'right'; ctx.font = '9px monospace';
+  ctx.fillStyle = '#6bcb77'; ctx.fillText('● seated', W - 10, 14);
+  ctx.fillStyle = '#ff6644'; ctx.fillText('● collision', W - 80, 14);
+  ctx.fillStyle = '#444'; ctx.fillText('● empty', W - 160, 14);
+}
+
+function drawNetworkChart() {
+  const c=document.getElementById('chart-network'), ctx=c.getContext('2d'), W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  const n=N_PLAYERS, cx=W/2, cy=H/2, rad=Math.min(W,H)/2-25;
+  const pos=[]; for(let i=0;i<n;i++) { const a=(i/n)*Math.PI*2-Math.PI/2; pos.push({x:cx+rad*Math.cos(a),y:cy+rad*Math.sin(a)}); }
+
+  // Find max historical weight for opacity scaling
+  const allVals = Object.values(G.tsg_all);
+  const maxW = allVals.length ? Math.max(...allVals) : 1;
+
+  // Layer 1: Historical 10★ links (dim purple, thicker with more history)
+  for(const [key, count] of Object.entries(G.tsg_all)) {
+    const [from, to] = key.split('→').map(Number);
+    const alpha = Math.min(0.15 + (count/maxW)*0.4, 0.55);
+    const width = 0.5 + (count/maxW)*2;
+    ctx.beginPath(); ctx.moveTo(pos[from].x,pos[from].y); ctx.lineTo(pos[to].x,pos[to].y);
+    ctx.strokeStyle=`rgba(167,139,250,${alpha})`; ctx.lineWidth=width; ctx.stroke();
+  }
+
+  // Layer 2: Current round 10★ links (bright, detect loops for alliance glow)
+  const entries=Object.entries(G.tsg);
+  const loopM=new Set();
+  for(let s=0;s<n;s++) { if(!(s in G.tsg)) continue; const v=[s]; let c2=G.tsg[s]; const sn=new Set([s]); while(c2!==undefined&&!sn.has(c2)){sn.add(c2);v.push(c2);c2=G.tsg[c2];} if(c2===s&&v.length>=3) v.forEach(x=>loopM.add(x)); }
+  for(const [g,rv] of entries) {
+    const gi=parseInt(g), isL=loopM.has(gi)&&loopM.has(rv);
+    ctx.beginPath(); ctx.moveTo(pos[gi].x,pos[gi].y); ctx.lineTo(pos[rv].x,pos[rv].y);
+    ctx.strokeStyle=isL?'#6bcb77':'#ffd93d'; ctx.lineWidth=isL?3:1.5; ctx.stroke();
+    // Arrowhead
+    const dx=pos[rv].x-pos[gi].x, dy=pos[rv].y-pos[gi].y, len=Math.sqrt(dx*dx+dy*dy);
+    if(len>0) {
+      const ux=dx/len, uy=dy/len, ax=pos[rv].x-ux*10, ay=pos[rv].y-uy*10;
+      ctx.beginPath(); ctx.moveTo(pos[rv].x,pos[rv].y);
+      ctx.lineTo(ax-uy*4,ay+ux*4); ctx.lineTo(ax+uy*4,ay-ux*4); ctx.closePath();
+      ctx.fillStyle=isL?'#6bcb77':'#ffd93d'; ctx.fill();
+    }
+  }
+
+  // Nodes
+  for(let i=0;i<n;i++) {
+    const isL=loopM.has(i), isK=G.lk===i;
+    ctx.beginPath(); ctx.arc(pos[i].x,pos[i].y,isL?9:6,0,Math.PI*2);
+    ctx.fillStyle=isK?'#ffd93d':(isL?'#6bcb77':STRAT_COLORS[G.strats[i]]); ctx.fill();
+    ctx.fillStyle='#aaa'; ctx.font='8px monospace'; ctx.textAlign='center';
+    ctx.fillText('P'+i,pos[i].x,pos[i].y+(i<n/2?-12:16));
+  }
+}
+
+function drawStatsTicker() {
+  const el = document.getElementById('stats-ticker');
+  if (!el || !G) return;
+  const n = N_PLAYERS;
+
+  // Most unique seats
+  const seatCounts = Array.from({length:n},(_,i)=>({i, seats:Object.keys(G.uniqueSeats[i]).length}));
+  seatCounts.sort((a,b)=>b.seats-a.seats);
+  const topSeats = seatCounts.slice(0,3);
+
+  // Longest fortress streaks
+  const streaks = [];
+  for(let i=0;i<n;i++) {
+    const hist = G.seatHistory[i];
+    let bestPos=0, bestLen=0;
+    if(hist.length>0) {
+      let curPos=hist[hist.length-1], curLen=0;
+      for(let h=hist.length-1;h>=0;h--) {
+        if(hist[h]===curPos && curPos>0) curLen++; else break;
+      }
+      // Also check best ever streak in history
+      for(let pos=2;pos<=N_SEATS;pos++) {
+        let streak=0, maxStreak=0;
+        for(let h=0;h<hist.length;h++) {
+          if(hist[h]===pos) { streak++; maxStreak=Math.max(maxStreak,streak); }
+          else streak=0;
+        }
+        if(maxStreak>bestLen) { bestLen=maxStreak; bestPos=pos; }
+      }
+    }
+    streaks.push({i, pos:bestPos, len:bestLen, need:Math.min(Math.max(bestPos*(bestPos-1),6),90)});
+  }
+  streaks.sort((a,b)=>b.len-a.len);
+  const topStreaks = streaks.filter(s=>s.len>0).slice(0,3);
+
+  // Rep stats
+  const reps = Array.from({length:n},(_,i)=>{
+    const r=G.reps[i]; const avg=repAvg(r,i);
+    return {i, avg, count:r.length};
+  });
+  const repsSorted = [...reps].sort((a,b)=>b.avg-a.avg);
+  const highRep = repsSorted.filter(r=>r.count>=1).slice(0,2);
+  const lowRep = [...reps].filter(r=>r.count>=1).sort((a,b)=>a.avg-b.avg).slice(0,2);
+
+  // Top 3 chips
+  const chips = Array.from({length:n},(_,i)=>({i,c:G.chips[i]}));
+  chips.sort((a,b)=>b.c-a.c);
+  const topChips = chips.slice(0,3);
+
+  // Build HTML
+  const pname = (i) => `<span style="color:${STRAT_COLORS[G.strats[i]]}">P${i}</span>`;
+  const sname = (i) => (STRAT_NAMES[G.strats[i]]||G.strats[i]).replace(/[🎲👻🕶️🕊️🔗🎯💀🧊📦🐍🦈⚔️🎪💤🏠]/g,'').trim();
+  const chipFmt = (v) => v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':'$'+v.toFixed(0);
+
+  let html = '';
+  html += `<div style="color:#74b9ff;margin-bottom:6px;">🎯 <b>MOST UNIQUE SEATS</b></div>`;
+  topSeats.forEach(s => {
+    const pct = (s.seats/N_SEATS*100).toFixed(0);
+    html += `  ${pname(s.i)} ${sname(s.i)} — <b>${s.seats}/${N_SEATS}</b> (${pct}%)<br>`;
+  });
+
+  html += `<div style="color:#ffd93d;margin:6px 0 4px;">🏗️ <b>LONGEST FORTRESS STREAK</b></div>`;
+  if(topStreaks.length) {
+    topStreaks.forEach(s => {
+      const pct = (s.len/s.need*100).toFixed(0);
+      html += `  ${pname(s.i)} seat ${s.pos}: <b>${s.len}/${s.need}</b> (${pct}%)<br>`;
+    });
+  } else html += '  <span style="color:#555">no streaks yet</span><br>';
+
+  html += `<div style="color:#6bcb77;margin:6px 0 4px;">⭐ <b>HIGHEST REP</b></div>`;
+  highRep.forEach(r => {
+    html += `  ${pname(r.i)} ${sname(r.i)} — <b>${r.avg.toFixed(1)}</b>★ (${r.count})<br>`;
+  });
+
+  html += `<div style="color:#ff6b6b;margin:6px 0 4px;">💀 <b>LOWEST REP</b></div>`;
+  lowRep.forEach(r => {
+    html += `  ${pname(r.i)} ${sname(r.i)} — <b>${r.avg.toFixed(1)}</b>★ (${r.count})<br>`;
+  });
+
+  // Trades this round
+  html += `<div style="color:#ffa502;margin:6px 0 4px;">💱 <b>VOTE MARKET</b></div>`;
+  if(G.roundTrades && G.roundTrades.length > 0) {
+    G.roundTrades.forEach(t => {
+      html += `  ${pname(t.seller)} sells ${t.star}★ → ${pname(t.buyer)} ($${t.price})<br>`;
+    });
+  } else { html += '  <span style="color:#555">no trades this round</span><br>'; }
+  html += `  <span style="color:#666">total: ${G.trades?G.trades.length:0} trades</span><br>`;
+
+  html += `<div style="color:#ffa502;margin:6px 0 4px;">💰 <b>TOP CHIPS</b></div>`;
+  topChips.forEach(s => {
+    html += `  ${pname(s.i)} ${sname(s.i)} — <b>${chipFmt(s.c)}</b><br>`;
+  });
+
+  el.innerHTML = html;
+}
+
+function drawBingoChart() {
+  const c=document.getElementById('chart-bingo'), ctx=c.getContext('2d'), W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  const n=N_PLAYERS, pad={l:40,r:10,t:15,b:25};
+  const plotW=W-pad.l-pad.r, plotH=H-pad.t-pad.b;
+
+  // Sort by unique seats descending
+  const BW=50;
+  const data = Array.from({length:n},(_,i)=>({i, seats:Object.entries(G.uniqueSeats[i]).filter(([s,rd])=>G.round-rd<=BW).length}));
+  data.sort((a,b)=>b.seats-a.seats);
+
+  const barW = Math.min(plotW/n-2, 28);
+  const maxS = N_SEATS;
+
+  // Bingo threshold line (10 seats)
+  const threshY = pad.t + plotH * (1 - maxS/maxS);
+  ctx.strokeStyle = '#6bcb7744'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(pad.l, threshY); ctx.lineTo(W-pad.r, threshY); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#6bcb77'; ctx.font = '9px monospace'; ctx.textAlign = 'right';
+  ctx.fillText(N_SEATS+' = BINGO', pad.l-4, threshY+3);
+
+  // Bars
+  for(let idx=0;idx<data.length;idx++) {
+    const d = data[idx];
+    const x = pad.l + idx*(barW+2);
+    const bH = (d.seats/maxS)*plotH;
+    const y = pad.t + plotH - bH;
+
+    ctx.fillStyle = STRAT_COLORS[G.strats[d.i]] || '#888';
+    ctx.globalAlpha = 0.8;
+    ctx.fillRect(x, y, barW, bH);
+    ctx.globalAlpha = 1;
+
+    // Count label
+    ctx.fillStyle = '#ddd'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(d.seats, x+barW/2, y-3);
+
+    // Player label
+    ctx.fillStyle = '#777'; ctx.font = '7px monospace';
+    ctx.save(); ctx.translate(x+barW/2, pad.t+plotH+12); ctx.rotate(-0.4);
+    ctx.fillText('P'+d.i, 0, 0); ctx.restore();
+  }
+
+  // Y axis
+  for(let s=0;s<=maxS;s+=2) {
+    const y = pad.t + plotH * (1 - s/maxS);
+    ctx.fillStyle = '#555'; ctx.font = '8px monospace'; ctx.textAlign = 'right';
+    ctx.fillText(s, pad.l-4, y+3);
+  }
+}
+
+function drawRepChart() {
+  const c=document.getElementById('chart-rep'), ctx=c.getContext('2d'), W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  const n=N_PLAYERS, pad={l:40,r:10,t:15,b:25};
+  const plotW=W-pad.l-pad.r, plotH=H-pad.t-pad.b;
+
+  // Sort by avg rep descending
+  const data = Array.from({length:n},(_,i)=>{
+    const r=G.reps[i]; const avg=repAvg(r,i);
+    return {i, avg, count:r.length};
+  });
+  data.sort((a,b)=>b.avg-a.avg);
+
+  const barW = Math.min(plotW/n-2, 28);
+  const maxR = 10;
+
+  // Heliocentric threshold: 3 incoming 10★
+  ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+  ctx.beginPath();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#ffd700'; ctx.font = '9px monospace'; ctx.textAlign = 'right';
+  ctx.fillText('☀️ 3×10★ = win', pad.l-4, pad.t+8);
+
+  // Bars
+  for(let idx=0;idx<data.length;idx++) {
+    const d = data[idx];
+    const x = pad.l + idx*(barW+2);
+    const bH = (d.avg/maxR)*plotH;
+    const y = pad.t + plotH - bH;
+
+    const aboveThresh = d.avg >= 9.0 && d.count >= 3; // heliocentric uses 10★ count, not rep avg
+    ctx.fillStyle = aboveThresh ? '#6bcb77' : (STRAT_COLORS[G.strats[d.i]] || '#888');
+    ctx.globalAlpha = d.count > 0 ? 0.8 : 0.3;
+    ctx.fillRect(x, y, barW, bH);
+    ctx.globalAlpha = 1;
+
+    // Glow if above threshold
+    if(aboveThresh) {
+      ctx.shadowColor = '#6bcb77'; ctx.shadowBlur = 8;
+      ctx.fillRect(x, y, barW, 2);
+      ctx.shadowBlur = 0;
+    }
+
+    // Rating label
+    ctx.fillStyle = '#ddd'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';
+    if(d.count>0) ctx.fillText(d.avg.toFixed(1), x+barW/2, y-3);
+
+    // Player label
+    ctx.fillStyle = '#777'; ctx.font = '7px monospace';
+    ctx.save(); ctx.translate(x+barW/2, pad.t+plotH+12); ctx.rotate(-0.4);
+    ctx.fillText('P'+d.i, 0, 0); ctx.restore();
+  }
+
+  // Y axis
+  for(let s=0;s<=maxR;s+=2) {
+    const y = pad.t + plotH * (1 - s/maxR);
+    ctx.fillStyle = '#555'; ctx.font = '8px monospace'; ctx.textAlign = 'right';
+    ctx.fillText(s+'★', pad.l-4, y+3);
+  }
+}
+
+function drawRepMarket() {
+  const c=document.getElementById('chart-repmarket'), ctx=c.getContext('2d'), W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  if(!G||!G.ratingPrices||G.ratingPrices.length<2) {
+    ctx.fillStyle='#555'; ctx.font='10px monospace'; ctx.textAlign='center';
+    ctx.fillText('waiting for data...', W/2, H/2);
+    return;
+  }
+
+  const pad={l:45,r:30,t:15,b:20};
+  const plotW=W-pad.l-pad.r, plotH=H-pad.t-pad.b;
+  const prices = G.ratingPrices;
+  const nRounds = prices.length;
+
+  const starColors = {
+    10:'#ffd93d', 9:'#ffa502', 8:'#ff6348', 7:'#ff4757',
+    6:'#a78bfa', 5:'#74b9ff', 4:'#0984e3', 3:'#6bcb77',
+    2:'#00d2d3', 1:'#576574'
+  };
+
+  // Linear scale — find max price across all rounds
+  let maxPrice = 1;
+  for(const p of prices) { for(let s=1;s<=10;s++) if((p[s]||0)>maxPrice) maxPrice=p[s]; }
+  maxPrice = Math.ceil(maxPrice * 1.1); // 10% headroom
+
+  const xScale = plotW / Math.max(1, nRounds-1);
+  const priceToY = (p) => pad.t + plotH - (Math.max(0,p) / maxPrice) * plotH;
+
+  // Y axis grid lines (4 evenly spaced)
+  ctx.strokeStyle='#444'; ctx.lineWidth=0.5;
+  for(let i=0;i<=4;i++) {
+    const val = maxPrice * (1 - i/4);
+    const y = pad.t + (plotH/4)*i;
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+plotW,y); ctx.stroke();
+    ctx.fillStyle='#888'; ctx.font='9px monospace'; ctx.textAlign='right';
+    ctx.fillText('$'+Math.round(val), pad.l-3, y+3);
+  }
+
+  // Draw lines for each star rating
+  for(let s=1;s<=10;s++) {
+    ctx.beginPath();
+    ctx.strokeStyle = starColors[s];
+    ctx.lineWidth = s>=9 ? 2.5 : s>=7 ? 1.5 : 0.8;
+    ctx.globalAlpha = s>=8 ? 1 : s>=5 ? 0.7 : 0.4;
+    for(let r=0;r<nRounds;r++) {
+      const x = pad.l + r*xScale;
+      const y = priceToY(prices[r][s] || 0);
+      if(r===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+
+  // Labels at end — spread to avoid overlap (same pattern as Share Prices / Chips charts)
+  const labels = [];
+  for(let s=1;s<=10;s++) {
+    const lastPrice = prices[nRounds-1][s] || 0;
+    const y = priceToY(lastPrice);
+    labels.push({s, y, price: lastPrice, color: starColors[s]});
+  }
+  labels.sort((a,b) => a.y - b.y);
+  for(let i=1; i<labels.length; i++) {
+    if(labels[i].y - labels[i-1].y < 10) labels[i].y = labels[i-1].y + 10;
+  }
+  const endX = pad.l + plotW;
+  for(const lb of labels) {
+    ctx.fillStyle = lb.color;
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${lb.s}★`, endX + 2, lb.y + 3);
+  }
+
+  // Trade markers (dots where actual sales happened)
+  if(G.trades && G.trades.length > 0) {
+    for(const t of G.trades) {
+      if(t.round >= nRounds) continue;
+      const x = pad.l + t.round * xScale;
+      const y = priceToY(t.price);
+      ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI*2);
+      ctx.fillStyle = starColors[t.star] || '#fff';
+      ctx.globalAlpha = 0.5;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // Footer
+  const tradeCount = G.trades ? G.trades.length : 0;
+  ctx.fillStyle='#888'; ctx.textAlign='center'; ctx.font='9px monospace';
+  ctx.fillText(`${tradeCount} trades | price = star value in chips`, W/2, H-3);
+}
+
+const _logBuffer = [];
+let _logFlushPending = false;
+let _logSuppressShares = false;
+function addLog(msg) {
+  if(!G) return;
+  // During fast-forward, only log wins, seasons, and key events
+  if(_logSuppressShares && !msg.includes('🏆') && !msg.includes('🃏 SEASON') && !msg.includes('GAME OVER') && !msg.includes('👑') && !msg.includes('🏴‍☠️')) return;
+  _logBuffer.push(`<div class="log-entry"><span style="color:#555">[R${G.round}]</span> ${msg}</div>`);
+  if(!_logFlushPending) {
+    _logFlushPending = true;
+    requestAnimationFrame(() => {
+      const el=document.getElementById('log');
+      el.insertAdjacentHTML('beforeend', _logBuffer.join(''));
+      _logBuffer.length = 0;
+      // Cap at 300 entries to prevent DOM bloat
+      while(el.children.length > 300) el.removeChild(el.firstChild);
+      el.scrollTop=el.scrollHeight;
+      _logFlushPending = false;
+    });
+  }
+}
+
+function toggleAuto() {
+  if(autoTimer) stopAuto();
+  else {
+    document.getElementById('btn-auto').classList.add('active');
+    document.getElementById('btn-auto').textContent='⏸️ Pause';
+    if(autoSpeed <= 50) _logSuppressShares = true;
+    autoTimer=setInterval(()=>{if(G&&!G.over)step();else stopAuto();},autoSpeed);
+  }
+}
+function stopAuto() { if(autoTimer){clearInterval(autoTimer);autoTimer=null;} _logSuppressShares=false; document.getElementById('btn-auto').classList.remove('active'); document.getElementById('btn-auto').textContent='▶️ Auto Play'; }
+function fastForward() {
+  if(!G||G.over)return; stopAuto();
+  _logSuppressShares = true;
+  function chunk() {
+    const start=Date.now();
+    while(!G.over && G.round<N_ROUNDS && Date.now()-start<50) step();
+    if(!G.over && G.round<N_ROUNDS) requestAnimationFrame(chunk);
+    else _logSuppressShares = false;
+  }
+  chunk();
+}
+function updateSpeed() { autoSpeed=parseInt(document.getElementById('speed').value); if(autoTimer){stopAuto();toggleAuto();} }
+
+// === SHARE OWNERSHIP CHART — stacked: who owns each player's shares ===
+function drawShareOwnership() {
+  const c = document.getElementById('chart-shares');
+  if(!c || !G) return;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const n = N_PLAYERS;
+  const padL = 30, padR = 5, padT = 12, padB = 20;
+  const barW = (c.width - padL - padR) / n;
+  const maxH = c.height - padT - padB;
+  const pColors = ['#ff6b6b','#ffa502','#ff6348','#7bed9f','#70a1ff','#5352ed',
+                   '#2ed573','#1e90ff','#a78bfa','#f78fb3','#e17055'];
+  const bankColor = '#ffd700';
+  const selfColor = '#00ff88';
+
+  // For each player column: stacked segments showing WHO owns their shares
+  for(let target=0; target<n; target++) {
+    const x = padL + target * barW;
+    const segH = maxH / 10; // each share = 1/10 of height
+
+    // Background
+    ctx.fillStyle = '#222';
+    ctx.fillRect(x+1, padT, barW-2, maxH);
+
+    let yPos = padT + maxH; // start from bottom
+
+    // Self-owned (bright green, bottom)
+    const selfOwned = G.shares[target][target];
+    if(selfOwned > 0) {
+      const h = selfOwned * segH;
+      yPos -= h;
+      ctx.fillStyle = selfColor;
+      ctx.fillRect(x+1, yPos, barW-2, h);
+      if(selfOwned >= 2) {
+        ctx.fillStyle = '#000';
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`ME:${selfOwned}`, x + barW/2, yPos + h/2 + 3);
+      }
+    }
+
+    // Other players' holdings (colored by owner)
+    for(let owner=0; owner<n; owner++) {
+      if(owner === target) continue;
+      const held = G.shares[owner][target];
+      if(held <= 0) continue;
+      const h = held * segH;
+      yPos -= h;
+      ctx.fillStyle = pColors[owner % pColors.length];
+      ctx.globalAlpha = 0.7;
+      ctx.fillRect(x+1, yPos, barW-2, h);
+      ctx.globalAlpha = 1;
+      if(held >= 2) {
+        ctx.fillStyle = '#fff';
+        ctx.font = '8px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`P${owner}:${held}`, x + barW/2, yPos + h/2 + 3);
+      }
+    }
+
+    // Bank holdings (gold, top)
+    const bankHeld = G.bankShares[target];
+    if(bankHeld > 0) {
+      const h = bankHeld * segH;
+      yPos -= h;
+      ctx.fillStyle = bankColor;
+      ctx.globalAlpha = 0.8;
+      ctx.fillRect(x+1, yPos, barW-2, h);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 8px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`🏦${bankHeld}`, x + barW/2, yPos + h/2 + 3);
+    }
+
+    // Player label
+    ctx.fillStyle = '#fff';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`P${target}`, x + barW/2, c.height - 6);
+  }
+
+  // Win gate line at 6/10
+  const gateY = padT + maxH - (6/10) * maxH;
+  ctx.strokeStyle = selfColor;
+  ctx.setLineDash([3,3]);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padL, gateY);
+  ctx.lineTo(c.width - padR, gateY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = selfColor;
+  ctx.font = '8px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('6=FREE', padL, gateY - 2);
+}
+
+// === BETTING STATS ===
+function drawBettingStats() {
+  const el = document.getElementById('betting-stats');
+  if(!el || !G) return;
+  const n = N_PLAYERS;
+  // Build player stats sorted by HR earnings
+  const stats = [];
+  for(let i=0;i<n;i++) {
+    const att = G.hrAttempts[i], hits = G.hrHits[i];
+    const pct = att > 0 ? ((hits/att)*100).toFixed(0) : '—';
+    const earnings = G.hrEarnings[i] || 0;
+    stats.push({i, att, hits, pct, earnings, strat: G.strats[i]});
+  }
+  // Top readers (by earnings)
+  const readers = stats.filter(s=>s.att>0).sort((a,b)=>b.earnings-a.earnings);
+  // Most read (by times targeted)
+  let html = '<div style="color:#ff9f43;font-weight:bold;margin-bottom:4px;">📖 Top Readers</div>';
+  if(readers.length === 0) html += '<div style="color:#555">no reads yet</div>';
+  for(const r of readers.slice(0,6)) {
+    const col = r.earnings >= 0 ? '#2ed573' : '#ff6b6b';
+    html += `<div>P${r.i} ${STRAT_NAMES[r.strat]||r.strat} <span style="color:${col}">${r.earnings>=0?'+':''}$${r.earnings.toFixed(0)}</span> <span style="color:#888">${r.pct}% (${r.hits}/${r.att})</span></div>`;
+  }
+  // Self-ownership summary
+  html += '<div style="color:#a78bfa;font-weight:bold;margin-top:8px;margin-bottom:4px;">🔐 Self-Ownership</div>';
+  const ownership = stats.map(s => ({i:s.i, self: G.shares[s.i][s.i], strat:s.strat})).sort((a,b)=>b.self-a.self);
+  for(const o of ownership.slice(0,6)) {
+    const col = o.self >= 6 ? '#00ff88' : o.self >= 4 ? '#ffa502' : '#ff6b6b';
+    html += `<div>P${o.i} <span style="color:${col}">${o.self}/10</span> <span style="color:#888">${STRAT_NAMES[o.strat]||o.strat}</span></div>`;
+  }
+  // Majority tax paid
+  html += '<div style="color:#ffd700;font-weight:bold;margin-top:8px;margin-bottom:4px;">🏦 Fed</div>';
+  html += `<div>Budget: <span style="color:#ffd700">$${G.bankBudget.toFixed(0)}</span></div>`;
+  if(G.bankRatings && G.bankRatings.length > 0) {
+    const inv = {};
+    for(const s of G.bankRatings) inv[s] = (inv[s]||0)+1;
+    const invStr = Object.entries(inv).sort((a,b)=>b[0]-a[0]).map(([s,c])=>`${s}★×${c}`).join(' ');
+    html += `<div>📦 Inv: <span style="color:#a78bfa">${invStr}</span></div>`;
+  }
+  el.innerHTML = html;
+}
+
+// === PORTFOLIO CHART (what each player OWNS) ===
+function drawPortfolios() {
+  const c = document.getElementById('chart-portfolios');
+  if(!c || !G) return;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const n = N_PLAYERS;
+  const padL = 30, padR = 5, padT = 12, padB = 20;
+  const colW = (c.width - padL - padR) / (n + 1); // +1 for bank column
+  const pColors = ['#ff6b6b','#ffa502','#ff6348','#7bed9f','#70a1ff','#5352ed',
+                   '#2ed573','#1e90ff','#a78bfa','#f78fb3','#e17055','#fd79a8'];
+  const selfColor = '#00ff88';
+  const bankColor = '#ffd700';
+
+  // For each OWNER (column) show what targets they hold
+  for(let owner=0; owner <= n; owner++) {
+    const isBank = owner === n;
+    const x = padL + owner * colW;
+
+    // Count total shares this owner holds
+    let totalHeld = 0;
+    if(isBank) { totalHeld = G.bankShares.reduce((a,b)=>a+b,0); }
+    else { for(let t=0;t<n;t++) totalHeld += G.shares[owner][t]; }
+    if(totalHeld <= 0) totalHeld = 1;
+
+    const maxH = c.height - padT - padB;
+    ctx.fillStyle = '#222';
+    ctx.fillRect(x+1, padT, colW-2, maxH);
+
+    let yPos = padT + maxH;
+    for(let target=0; target<n; target++) {
+      const held = isBank ? G.bankShares[target] : G.shares[owner][target];
+      if(held <= 0) continue;
+      const h = (held / totalHeld) * maxH;
+      yPos -= h;
+      const isSelf = !isBank && owner === target;
+      ctx.fillStyle = isSelf ? selfColor : pColors[target % pColors.length];
+      ctx.globalAlpha = isSelf ? 1 : 0.7;
+      ctx.fillRect(x+1, yPos, colW-2, h);
+      ctx.globalAlpha = 1;
+      if(h >= 12) {
+        ctx.fillStyle = isSelf ? '#000' : '#fff';
+        ctx.font = '8px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(isSelf ? `ME:${held}` : `P${target}:${held}`, x + colW/2, yPos + h/2 + 3);
+      }
+    }
+
+    // Label
+    ctx.fillStyle = isBank ? bankColor : '#fff';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(isBank ? '🏦' : `P${owner}`, x + colW/2, c.height - 6);
+  }
+}
+
+// === SHARE PRICE CHART (time series) ===
+function drawSharePrices() {
+  const c = document.getElementById('chart-shareprices');
+  if(!c || !G || !G.sharePriceHistory.length) return;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const n = N_PLAYERS;
+  const hist = G.sharePriceHistory;
+  const maxPrice = Math.max(1, ...hist.flatMap(h => Object.values(h)));
+  const colors = ['#ff6b6b','#ffa502','#ff6348','#7bed9f','#70a1ff','#5352ed',
+                  '#2ed573','#1e90ff','#a78bfa','#f78fb3','#e17055'];
+
+  const padL = 40, padR = 30, padT = 15, padB = 20;
+  const w = c.width - padL - padR;
+  const h = c.height - padT - padB;
+
+  // Y axis labels
+  ctx.fillStyle = '#888';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'right';
+  for(let p = 0; p <= maxPrice; p += Math.max(1, Math.floor(maxPrice/4))) {
+    const y = padT + h - (p / maxPrice) * h;
+    ctx.fillText(`$${p.toFixed(0)}`, padL - 3, y + 3);
+  }
+
+  // Draw lines
+  for(let p=0; p<n; p++) {
+    ctx.strokeStyle = colors[p % colors.length];
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for(let t=0; t<hist.length; t++) {
+      const x = padL + (t / Math.max(1, hist.length-1)) * w;
+      const y = padT + h - ((hist[t][p] || 1) / maxPrice) * h;
+      if(t === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  // Labels at end of each line — spread to avoid overlap
+  if(hist.length > 0) {
+    const labels = [];
+    for(let p=0; p<n; p++) {
+      const lastPrice = hist[hist.length-1][p] || 1;
+      const y = padT + h - (lastPrice / maxPrice) * h;
+      labels.push({p, y, price: lastPrice, color: colors[p % colors.length]});
+    }
+    labels.sort((a,b) => a.y - b.y);
+    // Spread labels: minimum 10px apart
+    for(let i=1; i<labels.length; i++) {
+      if(labels[i].y - labels[i-1].y < 10) {
+        labels[i].y = labels[i-1].y + 10;
+      }
+    }
+    const x = padL + w;
+    for(const lb of labels) {
+      ctx.fillStyle = lb.color;
+      ctx.font = 'bold 9px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(`P${lb.p}`, x + 2, lb.y + 3);
+    }
+  }
+
+  // Trade count
+  const totalShareTrades = G.sharePriceHistory.length;
+  ctx.fillStyle = '#888';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${totalShareTrades} rounds | share prices`, c.width/2, c.height - 3);
+}
+
+// === PLAYER CHIPS LINE GRAPH ===
+function drawChipChart() {
+  const c = document.getElementById('chart-chips');
+  if(!c || !G || !G.chipHistory || !G.chipHistory.length) return;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const n = N_PLAYERS;
+  const hist = G.chipHistory;
+  const maxChips = Math.max(1, ...hist.flatMap(h => Object.values(h)));
+  const colors = ['#ff6b6b','#ffa502','#ff6348','#7bed9f','#70a1ff','#5352ed',
+                  '#2ed573','#1e90ff','#a78bfa','#f78fb3','#e17055'];
+  const padL = 45, padR = 30, padT = 15, padB = 20;
+  const w = c.width - padL - padR;
+  const h = c.height - padT - padB;
+
+  // Y axis
+  ctx.strokeStyle = '#444'; ctx.lineWidth = 0.5;
+  for(let i=0;i<=4;i++) {
+    const y = padT + (h/4)*i;
+    const val = maxChips * (1 - i/4);
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+w,y); ctx.stroke();
+    ctx.fillStyle = '#888'; ctx.font = '9px monospace'; ctx.textAlign = 'right';
+    ctx.fillText('$'+Math.round(val), padL-3, y+3);
+  }
+
+  // Lines
+  for(let p=0; p<n; p++) {
+    ctx.strokeStyle = colors[p % colors.length];
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for(let r=0; r<hist.length; r++) {
+      const x = padL + (r/(hist.length-1||1)) * w;
+      const y = padT + h - ((hist[r][p]||0) / maxChips) * h;
+      r === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+
+  // Labels at end — spread to avoid overlap
+  const labels = [];
+  for(let p=0; p<n; p++) {
+    const lastChips = hist[hist.length-1][p] || 0;
+    const y = padT + h - (lastChips / maxChips) * h;
+    labels.push({p, y, chips: lastChips, color: colors[p % colors.length]});
+  }
+  labels.sort((a,b) => a.y - b.y);
+  for(let i=1; i<labels.length; i++) {
+    if(labels[i].y - labels[i-1].y < 10) labels[i].y = labels[i-1].y + 10;
+  }
+  for(const lb of labels) {
+    ctx.fillStyle = lb.color;
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`P${lb.p}`, padL + w + 2, lb.y + 3);
+  }
+
+  ctx.fillStyle = '#888'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+  ctx.fillText(`${hist.length} rounds | player chips`, c.width/2, c.height - 3);
+}
+
+function drawChairChart() {
+  const c = document.getElementById('chart-chairpoints');
+  if(!c || !G || !G.chairHistory || !G.chairHistory.length) return;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const n = N_PLAYERS;
+  const hist = G.chairHistory;
+  const maxScore = Math.max(CHAIR_SCORE_WIN, ...hist.flatMap(h => Object.values(h)));
+  const colors = ['#ff6b6b','#ffa502','#ff6348','#7bed9f','#70a1ff','#5352ed',
+                  '#2ed573','#1e90ff','#a78bfa','#f78fb3','#e17055','#fd79a8'];
+  const padL = 45, padR = 30, padT = 15, padB = 20;
+  const w = c.width - padL - padR;
+  const h = c.height - padT - padB;
+
+  // Y axis
+  ctx.strokeStyle = '#444'; ctx.lineWidth = 0.5;
+  for(let i=0;i<=4;i++) {
+    const y = padT + (h/4)*i;
+    const val = maxScore * (1 - i/4);
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+w,y); ctx.stroke();
+    ctx.fillStyle = '#888'; ctx.font = '9px monospace'; ctx.textAlign = 'right';
+    ctx.fillText(Math.round(val), padL-3, y+3);
+  }
+
+  // Win threshold line
+  const winY = padT + h - (CHAIR_SCORE_WIN / maxScore) * h;
+  ctx.strokeStyle = '#ffd93d'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(padL, winY); ctx.lineTo(padL+w, winY); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#ffd93d'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
+  ctx.fillText('WIN', padL+2, winY-3);
+
+  // Lines
+  for(let p=0; p<n; p++) {
+    ctx.strokeStyle = colors[p % colors.length];
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for(let r=0; r<hist.length; r++) {
+      const x = padL + (r/(hist.length-1||1)) * w;
+      const y = padT + h - ((hist[r][p]||0) / maxScore) * h;
+      r === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+
+  // Labels at end
+  const labels = [];
+  for(let p=0; p<n; p++) {
+    const last = hist[hist.length-1][p] || 0;
+    const y = padT + h - (last / maxScore) * h;
+    labels.push({p, y, score: last, color: colors[p % colors.length]});
+  }
+  labels.sort((a,b) => a.y - b.y);
+  for(let i=1; i<labels.length; i++) {
+    if(labels[i].y - labels[i-1].y < 10) labels[i].y = labels[i-1].y + 10;
+  }
+  for(const lb of labels) {
+    ctx.fillStyle = lb.color;
+    ctx.font = 'bold 9px monospace'; ctx.textAlign = 'left';
+    ctx.fillText(`P${lb.p}`, padL + w + 2, lb.y + 3);
+  }
+
+  ctx.fillStyle = '#888'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+  ctx.fillText(`${hist.length} rounds | chair points (win: ${CHAIR_SCORE_WIN})`, c.width/2, c.height - 3);
+}
+
+newGame();
+</script>
+</body>
+</html>
