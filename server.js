@@ -100,9 +100,11 @@ const wss = new WebSocketServer({ server });
 const tableManager = new TableManager();
 const tournamentManager = new TournamentManager(tableManager);
 
+const path = require('path');
+
 // Middleware
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // API info route (doesn't override index.html since static is first)
 app.get('/api', (req, res) => {
