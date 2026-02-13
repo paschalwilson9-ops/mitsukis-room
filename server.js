@@ -104,8 +104,8 @@ const tournamentManager = new TournamentManager(tableManager);
 app.use(express.json());
 app.use(express.static('public'));
 
-// Welcome route
-app.get('/', (req, res) => {
+// API info route (doesn't override index.html since static is first)
+app.get('/api', (req, res) => {
   res.json({
     name: "🌙 Mitsuki's Room",
     version: '1.0.0',

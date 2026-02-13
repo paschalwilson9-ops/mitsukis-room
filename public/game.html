@@ -130,7 +130,7 @@ h1 { text-align: center; font-size: 1.6em; margin-bottom: 3px; background: linea
 <script>
 // === CURRENT GAME RULES: 11p/10s/100r ===
 const N_PLAYERS = 12, N_SEATS = 10, N_ROUNDS = 300;
-const DYNASTY = 8;          // consecutive kings
+const DYNASTY = 10;         // consecutive kings + 6/10 ownership gate
 const REP_WIN = 8.5;        // 3×own + 2 ratings / 5 — functionally requires 8/10+ ownership
 const CHAIR_SCORE_WIN = 1500; // instant win
 const HR_MULT = 13;
@@ -1052,8 +1052,9 @@ function step() {
           if(seller===buyer || G.shares[seller][buyer]<=0) continue;
           const base = G.sharePrices[buyer] || 10;
           const repM = 1 + (buyerRep)/10;
-          let ask = base * repM * (0.8+Math.random()*0.4) * villainDiscount;
           const so = G.shares[buyer][buyer]; // re-read in case changed
+          const ownershipMult = 1.0 + Math.max(0, so - 3) * 0.5; // 4/10=1.5×, 6/10=2.5×, 8/10=3.5×
+          let ask = base * repM * (0.8+Math.random()*0.4) * villainDiscount * ownershipMult;
           const desp = so<3?2.5:(so<5?1.5:1.2);
           const maxPay = G.chips[buyer] * 0.15 * desp * (despMult||1);
           if(maxPay>=ask && G.chips[buyer]>=ask) {
