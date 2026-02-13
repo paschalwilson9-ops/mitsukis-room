@@ -65,6 +65,19 @@ h1 { text-align: center; font-size: 1.6em; margin-bottom: 3px; background: linea
 .log-alliance { color: #a78bfa; }
 @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
 @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+@media (max-width: 700px) {
+  body { font-size: 11px; }
+  .game-layout { flex-direction: column; }
+  .game-sidebar { width: 100%; position: static; max-height: none; display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+  .game-sidebar > div { width: calc(50% - 4px); min-width: 140px; }
+  .controls { flex-wrap: wrap; }
+  .controls button { font-size: 0.8em; padding: 4px 8px; }
+  .seats-area { gap: 3px; }
+  .seats-area > div { min-width: 60px; font-size: 0.8em; }
+  canvas { max-height: 200px !important; }
+  #win-banner { font-size: 0.8em !important; }
+  #win-banner h2 { font-size: 1.2em !important; }
+}
 </style>
 </head>
 <body>
