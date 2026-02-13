@@ -103,8 +103,22 @@ const tournamentManager = new TournamentManager(tableManager);
 const path = require('path');
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// === Hierarchy Game — Sim Data Sync ===
+const fs = require('fs');
+const SIM_DATA_DIR = path.join(__dirname, 'public');
+
+app.post('/api/sim-sync', (req, res) => {
+  const { graph_data, state_data, key } = req.body;
+  if (key !== 'mitsuki-moon-2026') return res.status(403).json({ error: 'bad key' });
+  try {
+    if (graph_data) fs.writeFileSync(path.join(SIM_DATA_DIR, 'evolution_graph_data.json'), JSON.stringify(graph_data));
+    if (state_data) fs.writeFileSync(path.join(SIM_DATA_DIR, 'genetic_live_state.json'), JSON.stringify(state_data));
+    res.json({ ok: true, ts: new Date().toISOString() });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
 // API info route (doesn't override index.html since static is first)
 app.get('/api', (req, res) => {

@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>🧬 Game of Hierarchy — Evolution Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0f0f1a; color:#e0e0e0; font-family:'Segoe UI',system-ui,sans-serif; padding:20px; }
+h1 { text-align:center; font-size:28px; margin-bottom:8px; background:linear-gradient(90deg,#ff6b6b,#feca57,#48dbfb,#ff9ff3); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.subtitle { text-align:center; color:#888; font-size:14px; margin-bottom:20px; }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; max-width:1400px; margin:0 auto; }
+.card { background:#16213e; border-radius:12px; padding:16px; border:1px solid #1a3a5c; }
+.card.full { grid-column:1/-1; }
+.card h2 { font-size:16px; color:#48dbfb; margin-bottom:12px; }
+.card canvas { width:100%!important; }
+.findings { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+.stat { background:#1a2744; border-radius:8px; padding:12px; text-align:center; }
+.stat .val { font-size:28px; font-weight:bold; }
+.stat .label { font-size:11px; color:#888; margin-top:4px; }
+.stat.dynasty .val { color:#ff6b6b; }
+.stat.mogul .val { color:#feca57; }
+.stat.rep .val { color:#48dbfb; }
+.stat.alliance .val { color:#ff9ff3; }
+.stat.cs .val { color:#1dd1a1; }
+.stat.it .val { color:#f368e0; }
+.leader { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #1a2744; font-size:13px; }
+.leader .rank { width:24px; text-align:center; font-weight:bold; }
+.leader .name { flex:1; }
+.leader .rate { font-weight:bold; color:#feca57; }
+.leader .wt { font-size:11px; color:#888; margin-left:4px; }
+.leader .bar { height:6px; border-radius:3px; margin-top:2px; }
+#status { text-align:center; color:#666; font-size:12px; margin-top:12px; }
+.gen-badge { display:inline-block; background:#ff6b6b33; color:#ff6b6b; padding:2px 8px; border-radius:10px; font-size:11px; margin-left:6px; }
+</style>
+</head>
+<body>
+<h1>🧬 Game of Hierarchy — Evolution Dashboard</h1>
+<div class="subtitle">Genetic Tournament • 11 Players • 10 Seats • 300 Rounds</div>
+
+<div class="grid">
+  <!-- Key Stats -->
+  <div class="card full">
+    <div class="findings" id="stats-grid"></div>
+  </div>
+
+  <!-- Strategy Win Rates Over Generations -->
+  <div class="card full">
+    <h2>📈 Strategy Win Rates Over Generations</h2>
+    <canvas id="ratesChart" height="100"></canvas>
+  </div>
+
+  <!-- Win Conditions Over Time -->
+  <div class="card">
+    <h2>🏆 Win Condition Shift Over Generations</h2>
+    <canvas id="wcChart" height="140"></canvas>
+  </div>
+
+  <!-- Win Condition Pie -->
+  <div class="card">
+    <h2>🎯 Current Win Conditions</h2>
+    <canvas id="pieChart" height="140"></canvas>
+  </div>
+
+  <!-- Leaderboard -->
+  <div class="card">
+    <h2>🏅 Current Leaderboard</h2>
+    <div id="leaderboard"></div>
+  </div>
+
+  <!-- Genetic Offspring Tracker -->
+  <div class="card">
+    <h2>🧬 Genetic Offspring Performance</h2>
+    <div id="offspring"></div>
+  </div>
+
+  <!-- Best Readers -->
+  <div class="card">
+    <h2>🎯 Best Readers (HR Accuracy)</h2>
+    <div id="bestReaders"></div>
+  </div>
+
+  <!-- Most Readable -->
+  <div class="card">
+    <h2>👁️ Most Readable (Get Read %)</h2>
+    <div id="mostReadable"></div>
+  </div>
+
+  <!-- Fortress Seats -->
+  <div class="card">
+    <h2>🪑 Wins by Seat</h2>
+    <canvas id="winSeatChart" height="200"></canvas>
+  </div>
+
+  <!-- Seat Diversity -->
+  <div class="card">
+    <h2>🪑 Avg Unique Seats Per Game</h2>
+    <div id="seatDiversity"></div>
+  </div>
+
+  <!-- Seat Diversity Over Gens -->
+  <div class="card">
+    <h2>🎯 Seat Diversity Over Generations</h2>
+    <canvas id="chart-diversity" height="200"></canvas>
+  </div>
+
+  <!-- Game Length -->
+  <div class="card">
+    <h2>📊 Average Game Length</h2>
+    <canvas id="endChart" height="140"></canvas>
+  </div>
+
+  <!-- End Round Distribution -->
+  <div class="card">
+    <h2>🎯 When Do Games End?</h2>
+    <canvas id="bucketChart" height="140"></canvas>
+  </div>
+
+  <!-- Share Prices -->
+  <div class="card">
+    <h2>💰 Avg Share Price Over Generations</h2>
+    <canvas id="priceChart" height="140"></canvas>
+  </div>
+
+  <!-- Rep History -->
+  <div class="card">
+    <h2>⭐ Avg Reputation Over Generations</h2>
+    <canvas id="repHistChart" height="140"></canvas>
+  </div>
+
+  <!-- Top Share Prices -->
+  <div class="card" id="topPricesCard">
+    <h2>💰 Highest Avg Share Prices</h2>
+    <div id="topPrices" class="leaderboard"></div>
+  </div>
+
+  <!-- Rep Leaderboard -->
+  <div class="card" id="repLeaderCard">
+    <h2>⭐ Highest Avg Rep</h2>
+    <div id="repLeader" class="leaderboard"></div>
+  </div>
+
+  <!-- Lowest Rep -->
+  <div class="card" id="lowRepCard">
+    <h2>😈 Lowest Avg Rep (Villains)</h2>
+    <div id="lowRep" class="leaderboard"></div>
+  </div>
+
+  <!-- Trade Prices by Share Behavior -->
+  <div class="card full">
+    <h2>🏷️ Avg Trade Price by Share Behavior</h2>
+    <canvas id="tradePriceChart" height="100"></canvas>
+  </div>
+
+  <!-- Share Trade Network -->
+  <div class="card full">
+    <h2>🕸️ Share Trade Network — Who Buys Whom</h2>
+    <div id="shareNetworkPanel" style="font-family:monospace;font-size:12px;max-height:300px;overflow-y:auto;"></div>
+  </div>
+
+  <!-- Rating Market Prices -->
+  <div class="card full">
+    <h2>📊 Rep Market — Avg Price per Star Rating</h2>
+    <canvas id="ratingPriceChart" height="120"></canvas>
+  </div>
+</div>
+
+<div id="status">Loading...</div>
+
+<script>
+const COLORS = {
+  sharkbait:'#ff6b6b', fu_sharkbait:'#ee5a24', bouncer:'#feca57', brawler:'#ff9f43',
+  shark:'#c44569', merchant:'#778beb', cartel_a:'#e77f67', cartel_b:'#cf6a87',
+  outsider_a:'#574b90', outsider_b:'#786fa6', diplomat_a:'#ff9ff3', diplomat_b:'#f368e0',
+  diplomat_c:'#c44569', drifter:'#808e9b', ghost:'#48dbfb', shadow:'#0abde3',
+  sleeper:'#1dd1a1'
+};
+const WT_COLORS = {
+  dynasty:'#ff6b6b', alliance:'#ff9ff3', iron_throne:'#f368e0',
+  fortress:'#fd79a8', chair_score:'#1dd1a1', rep_victory:'#48dbfb', mogul:'#ffa502',
+  bingo:'#a29bfe', heliocentric:'#ffd93d'
+};
+const WT_NAMES = {
+  dynasty:'Dynasty', alliance:'Alliance', fortress:'Fortress',
+  chair_score:'Chair Score', rep_victory:'Rep Victory', mogul:'Mogul',
+  bingo:'Bingo', heliocentric:'Heliocentric'
+};
+
+let ratesChart, wcChart, pieChart, endChart, bucketChart;
+
+function getColor(name) {
+  if (COLORS[name]) return COLORS[name];
+  // Generate from name hash
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  return `hsl(${Math.abs(h) % 360}, 70%, 60%)`;
+}
+
+function initCharts() {
+  const ctx1 = document.getElementById('ratesChart').getContext('2d');
+  ratesChart = new Chart(ctx1, {
+    type:'line',
+    data:{labels:[], datasets:[]},
+    options:{
+      responsive:true,
+      plugins:{legend:{position:'right',labels:{color:'#ccc',font:{size:10},boxWidth:12}}},
+      scales:{
+        x:{grid:{color:'#1a2744'},ticks:{color:'#888'}},
+        y:{grid:{color:'#1a2744'},ticks:{color:'#888',callback:v=>v+'%'},min:0}
+      },
+      interaction:{mode:'nearest',intersect:false},
+      elements:{point:{radius:2},line:{tension:0.3,borderWidth:2}}
+    }
+  });
+
+  const ctx2 = document.getElementById('wcChart').getContext('2d');
+  wcChart = new Chart(ctx2, {
+    type:'line',
+    data:{labels:[], datasets:[]},
+    options:{
+      responsive:true,
+      plugins:{legend:{position:'bottom',labels:{color:'#ccc',font:{size:10},boxWidth:12}}},
+      scales:{
+        x:{grid:{color:'#1a2744'},ticks:{color:'#888'}},
+        y:{grid:{color:'#1a2744'},ticks:{color:'#888',callback:v=>v+'%'},min:0,max:100,stacked:true}
+      },
+      elements:{line:{tension:0.3,borderWidth:2,fill:true}}
+    }
+  });
+
+  const ctx3 = document.getElementById('pieChart').getContext('2d');
+  pieChart = new Chart(ctx3, {
+    type:'doughnut',
+    data:{labels:[], datasets:[{data:[],backgroundColor:[]}]},
+    options:{
+      responsive:true,
+      plugins:{legend:{position:'bottom',labels:{color:'#ccc',font:{size:10}}}}
+    }
+  });
+
+  // Seat Diversity Over Gens
+  const ctxDiv = document.getElementById('chart-diversity').getContext('2d');
+  const divChart = new Chart(ctxDiv, {
+    type:'line',
+    data:{labels:[], datasets:[
+      {label:'Avg Unique Seats (all strategies)',data:[],borderColor:'#74b9ff',backgroundColor:'#74b9ff22',fill:true,tension:0.3,borderWidth:2}
+    ]},
+    options:{
+      responsive:true,
+      plugins:{legend:{position:'bottom',labels:{color:'#ccc',font:{size:10}}}},
+      scales:{
+        x:{grid:{color:'#1a2744'},ticks:{color:'#888'}},
+        y:{grid:{color:'#1a2744'},ticks:{color:'#888'},min:0,max:10,title:{display:true,text:'Unique Seats',color:'#888'}}
+      }
+    }
+  });
+  window._divChart = divChart;
+
+  const ctx4 = document.getElementById('endChart').getContext('2d');
+  endChart = new Chart(ctx4, {
+    type:'line',
+    data:{labels:[], datasets:[]},
+    options:{
+      responsive:true,
+      plugins:{legend:{position:'bottom',labels:{color:'#ccc',font:{size:10}}}},
+      scales:{
+        x:{grid:{color:'#1a2744'},ticks:{color:'#888'}},
+        y:{grid:{color:'#1a2744'},ticks:{color:'#888'},min:0,max:300,title:{display:true,text:'Rounds',color:'#888'}}
+      }
+    }
+  });
+
+  const ctx5 = document.getElementById('bucketChart').getContext('2d');
+  bucketChart = new Chart(ctx5, {
+    type:'bar',
+    data:{labels:[], datasets:[]},
+    options:{
+      responsive:true,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{color:'#1a2744'},ticks:{color:'#888'}},
+        y:{grid:{color:'#1a2744'},ticks:{color:'#888'},title:{display:true,text:'Games',color:'#888'}}
+      }
+    }
+  });
+
+  // Share Price chart
+  window._priceChart = new Chart(document.getElementById('priceChart').getContext('2d'), {
+    type:'line', data:{labels:[], datasets:[]},
+    options:{
+      responsive:true,
+      plugins:{legend:{display:true,labels:{color:'#ccc',boxWidth:10,font:{size:10}}}},
+      scales:{
+        x:{grid:{color:'#1a2744'},ticks:{color:'#888'}},
+        y:{grid:{color:'#1a2744'},ticks:{color:'#888'},title:{display:true,text:'Avg Share Price ($)',color:'#888'}}
+      }
+    }
+  });
+
+  // Rating Market Price chart
+  window._ratingPriceChart = new Chart(document.getElementById('ratingPriceChart').getContext('2d'), {
+    type:'line', data:{labels:[], datasets:[]},
+    options:{
+      responsive:true,
+      plugins:{legend:{display:true,position:'right',labels:{color:'#ccc',boxWidth:12,font:{size:11}}}},
+      scales:{
+        x:{grid:{color:'#1a2744'},ticks:{color:'#888'}},
+        y:{grid:{color:'#1a2744'},ticks:{color:'#888'},title:{display:true,text:'Avg Price (chips)',color:'#888'}}
+      }
+    }
+  });
+
+  // Trade Price by Behavior chart
+  window._tradePriceChart = new Chart(document.getElementById('tradePriceChart').getContext('2d'), {
+    type:'line', data:{labels:[], datasets:[]},
+    options:{
+      responsive:true,
+      plugins:{legend:{display:true,labels:{color:'#ccc',boxWidth:10,font:{size:10}}}},
+      scales:{
+        x:{grid:{color:'#1a2744'},ticks:{color:'#888'}},
+        y:{grid:{color:'#1a2744'},ticks:{color:'#888'},title:{display:true,text:'Avg Trade Price ($)',color:'#888'}}
+      }
+    }
+  });
+
+  // Rep History chart
+  window._repHistChart = new Chart(document.getElementById('repHistChart').getContext('2d'), {
+    type:'line', data:{labels:[], datasets:[]},
+    options:{
+      responsive:true,
+      plugins:{legend:{display:true,labels:{color:'#ccc',boxWidth:10,font:{size:10}}}},
+      scales:{
+        x:{grid:{color:'#1a2744'},ticks:{color:'#888'}},
+        y:{grid:{color:'#1a2744'},ticks:{color:'#888'},title:{display:true,text:'Avg Rep',color:'#888'}}
+      }
+    }
+  });
+}
+
+async function update() {
+  try {
+    const [graphRes, stateRes] = await Promise.all([
+      fetch('evolution_graph_data.json?t='+Date.now()),
+      fetch('genetic_live_state.json?t='+Date.now())
+    ]);
+    const graph = await graphRes.json();
+    const state = await stateRes.json();
+
+    // Find top 12 strategies by latest gen
+    const latest = graph.rates[graph.rates.length-1]?.rates || {};
+    const sorted = Object.entries(latest).sort((a,b)=>b[1]-a[1]);
+    const top12 = sorted.slice(0,12).map(x=>x[0]);
+
+    // Rates chart
+    ratesChart.data.labels = graph.rates.map(g=>'Gen '+g.gen);
+    ratesChart.data.datasets = top12.map(s=>({
+      label: s.length > 20 ? s.substring(0,20)+'…' : s,
+      data: graph.rates.map(g=>g.rates[s]||0),
+      borderColor: getColor(s),
+      backgroundColor: getColor(s)+'33',
+      fill: false
+    }));
+    ratesChart.update('none');
+
+    // Win condition chart
+    const wtypes = ['dynasty','alliance','fortress','chair_score','rep_victory','heliocentric','mogul','bingo'];
+    wcChart.data.labels = graph.win_conditions.map(g=>'Gen '+g.gen);
+    wcChart.data.datasets = wtypes.map(wt=>({
+      label: WT_NAMES[wt],
+      data: graph.win_conditions.map(g=>g.conditions[wt]||0),
+      borderColor: WT_COLORS[wt],
+      backgroundColor: WT_COLORS[wt]+'44',
+      fill: true
+    }));
+    wcChart.update('none');
+
+    // Pie chart — split fortress into High(2-3), Mid(4-6), Low(7-10)
+    const latestWC = graph.win_conditions[graph.win_conditions.length-1]?.conditions || {};
+    const ws = state.win_seats || {};
+    // Calculate fortress tier totals from win_seats
+    const fHigh = (ws['2']||0) + (ws['3']||0);
+    const fMid = (ws['4']||0) + (ws['5']||0) + (ws['6']||0);
+    const fLow = (ws['7']||0) + (ws['8']||0) + (ws['9']||0) + (ws['10']||0);
+    const fTotal = fHigh + fMid + fLow;
+    // Build pie entries: replace 'fortress' with tiers
+    const pieEntries = [];
+    const pieColors = [];
+    const TIER_COLORS = { 'Fort High(2-3)':'#ffeaa7', 'Fort Mid(4-6)':'#fd79a8', 'Fort Low(7-10)':'#a29bfe' };
+    for (const [k,v] of Object.entries(latestWC)) {
+      if (v <= 0) continue;
+      if (k === 'fortress') {
+        if (fTotal > 0) {
+          const fortPct = v;  // total fortress %
+          if (fHigh > 0) { pieEntries.push(['Fort High(2-3)', fortPct * fHigh/fTotal]); pieColors.push('#ffeaa7'); }
+          if (fMid > 0) { pieEntries.push(['Fort Mid(4-6)', fortPct * fMid/fTotal]); pieColors.push('#fd79a8'); }
+          if (fLow > 0) { pieEntries.push(['Fort Low(7-10)', fortPct * fLow/fTotal]); pieColors.push('#a29bfe'); }
+        } else {
+          pieEntries.push(['Fortress', v]); pieColors.push(WT_COLORS[k]);
+        }
+      } else {
+        pieEntries.push([WT_NAMES[k]||k, v]); pieColors.push(WT_COLORS[k]||'#636e72');
+      }
+    }
+    pieEntries.sort((a,b)=>b[1]-a[1]);
+    const sortedColors = pieEntries.map(([lbl])=> {
+      if (TIER_COLORS[lbl]) return TIER_COLORS[lbl];
+      const key = Object.entries(WT_NAMES).find(([k,v])=>v===lbl);
+      return key ? WT_COLORS[key[0]] : '#636e72';
+    });
+    pieChart.data.labels = pieEntries.map(x=>x[0]);
+    pieChart.data.datasets[0].data = pieEntries.map(x=>Math.round(x[1]*10)/10);
+    pieChart.data.datasets[0].backgroundColor = sortedColors;
+    pieChart.update('none');
+
+    // Stats
+    const sg = document.getElementById('stats-grid');
+    const topWC = pieEntries[0] || ['?',0];
+    sg.innerHTML = `
+      <div class="stat"><div class="val" style="color:#48dbfb">${state.generation}</div><div class="label">Generations</div></div>
+      <div class="stat"><div class="val" style="color:#feca57">${(state.total_games/1000).toFixed(0)}k</div><div class="label">Total Games</div></div>
+      <div class="stat"><div class="val" style="color:#1dd1a1">${state.pool_size}</div><div class="label">Living Strategies</div></div>
+      <div class="stat dynasty"><div class="val">${sorted[0]?sorted[0][1].toFixed(1)+'%':'?'}</div><div class="label">#1: ${sorted[0]?sorted[0][0]:'?'}</div></div>
+      <div class="stat mogul"><div class="val">${sorted[1]?sorted[1][1].toFixed(1)+'%':'?'}</div><div class="label">#2: ${sorted[1]?sorted[1][0]:'?'}</div></div>
+      <div class="stat rep"><div class="val">${topWC[0]}</div><div class="label">Dominant Win Condition (${Math.round(topWC[1]*10)/10}%)</div></div>
+    `;
+
+    // Leaderboard
+    const lb = document.getElementById('leaderboard');
+    lb.innerHTML = sorted.slice(0,15).map((x,i)=>{
+      const r = state.results?.[x[0]];
+      const wt = r?.top_wt || '?';
+      const isGen = x[0].startsWith('g') && x[0].includes('_') && !['ghost','shark'].some(s=>x[0].startsWith(s));
+      return `<div class="leader">
+        <div class="rank">${i<3?['🥇','🥈','🥉'][i]:(i+1)}</div>
+        <div class="name">${isGen?'🧬 ':''}${x[0]}</div>
+        <div class="rate">${x[1].toFixed(1)}%</div>
+        <div class="wt">${WT_NAMES[wt]||wt}</div>
+      </div>`;
+    }).join('');
+
+    // Offspring tracker
+    const off = document.getElementById('offspring');
+    const genStrats = sorted.filter(x=>x[0].startsWith('g') && x[0].includes('.'));
+    off.innerHTML = genStrats.slice(0,10).map(x=>{
+      const r = state.results?.[x[0]];
+      const wt = r?.top_wt || '?';
+      const pct = x[1];
+      const barW = Math.min(pct * 5, 100);
+      return `<div class="leader">
+        <div class="name">🧬 ${x[0]}</div>
+        <div class="rate">${pct.toFixed(1)}%</div>
+        <div class="wt">${WT_NAMES[wt]||wt}</div>
+      </div>
+      <div class="bar" style="width:${barW}%;background:${getColor(x[0])};height:4px;border-radius:2px;margin-bottom:4px;"></div>`;
+    }).join('');
+
+    // HR stats panels
+    if (state.hr_stats) {
+      const hrArr = Object.entries(state.hr_stats).filter(x=>x[1].attempts>=50);
+      const readers = hrArr.sort((a,b)=>b[1].accuracy-a[1].accuracy).slice(0,8);
+      const readable = hrArr.sort((a,b)=>b[1].readability-a[1].readability).slice(0,8);
+
+      document.getElementById('bestReaders').innerHTML = readers.map(([s,h])=>{
+        const barW = Math.min(h.accuracy, 100);
+        return `<div class="leader">
+          <div class="name">${s}</div>
+          <div class="rate" style="color:#1dd1a1">${h.accuracy}%</div>
+          <div class="wt">${h.hits}/${h.attempts}</div>
+        </div>
+        <div style="height:4px;border-radius:2px;margin-bottom:4px;width:${barW}%;background:linear-gradient(90deg,#1dd1a1,#48dbfb)"></div>`;
+      }).join('');
+
+      document.getElementById('mostReadable').innerHTML = readable.map(([s,h])=>{
+        const barW = Math.min(h.readability, 100);
+        return `<div class="leader">
+          <div class="name">${s}</div>
+          <div class="rate" style="color:#ff6b6b">${h.readability}%</div>
+          <div class="wt">${h.was_read}/${h.targeted}</div>
+        </div>
+        <div style="height:4px;border-radius:2px;margin-bottom:4px;width:${barW}%;background:linear-gradient(90deg,#ff6b6b,#feca57)"></div>`;
+      }).join('');
+    }
+
+    // Wins by seat bar chart — color-coded tiers
+    if (state.win_seats) {
+      const ws = state.win_seats;
+      const labels = []; const values = []; const colors = [];
+      const tierColors = {
+        1: '#ff6b6b',     // Dynasty (red)
+        2: '#ffeaa7', 3: '#ffeaa7',  // High fortress (gold) — seats 2-3
+        4: '#fd79a8', 5: '#fd79a8', 6: '#fd79a8',  // Mid fortress (pink) — seats 4-6
+        7: '#a29bfe', 8: '#a29bfe', 9: '#a29bfe', 10: '#a29bfe'  // Low fortress (purple) — seats 7-10
+      };
+      for (let i = 1; i <= 10; i++) {
+        labels.push('Seat ' + i);
+        values.push(ws[String(i)] || 0);
+        colors.push(tierColors[i]);
+      }
+      // Tier totals
+      const high = (ws['2']||0) + (ws['3']||0);
+      const mid = (ws['4']||0) + (ws['5']||0) + (ws['6']||0);
+      const low = (ws['7']||0) + (ws['8']||0) + (ws['9']||0) + (ws['10']||0);
+      const dynasty = ws['1']||0;
+      const total = high + mid + low + dynasty;
+      document.getElementById('winSeatChart').parentElement.querySelector('h2').innerHTML =
+        '🪑 Wins by Seat &nbsp;<span style="font-size:12px;color:#dfe6e9">' +
+        '<span style="color:#ff6b6b">●</span> Dynasty ' +
+        '<span style="color:#ffeaa7">●</span> High(2-3) ' + (total ? Math.round(high/total*100) : 0) + '% ' +
+        '<span style="color:#fd79a8">●</span> Mid(4-6) ' + (total ? Math.round(mid/total*100) : 0) + '% ' +
+        '<span style="color:#a29bfe">●</span> Low(7-10) ' + (total ? Math.round(low/total*100) : 0) + '%</span>';
+      const ctx = document.getElementById('winSeatChart');
+      if (ctx._chart) ctx._chart.destroy();
+      ctx._chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Wins',
+            data: values,
+            backgroundColor: colors,
+            borderColor: colors.map(c => c + '99'),
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: '#dfe6e9' }, grid: { color: '#333' } },
+            y: { ticks: { color: '#dfe6e9' }, grid: { color: '#333' }, beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    // Seat diversity
+    if (state.seat_diversity) {
+      const sd = Object.entries(state.seat_diversity).sort((a,b)=>b[1]-a[1]).slice(0,10);
+      document.getElementById('seatDiversity').innerHTML = sd.map(([s,avg])=>{
+        const barW = avg * 10; // max 10 seats = 100%
+        const color = avg >= 8 ? '#a29bfe' : avg >= 5 ? '#48dbfb' : '#ff6b6b';
+        return `<div class="leader">
+          <div class="name">${s}</div>
+          <div class="rate" style="color:${color}">${avg}/10</div>
+        </div>
+        <div style="height:4px;border-radius:2px;margin-bottom:4px;width:${barW}%;background:${color}"></div>`;
+      }).join('');
+    }
+
+    // End-round charts
+    // Seat Diversity Over Gens
+    if (graph.diversity && graph.diversity.length > 0 && window._divChart) {
+      window._divChart.data.labels = graph.diversity.map(g=>'Gen '+g.gen);
+      window._divChart.data.datasets[0].data = graph.diversity.map(g=>g.avg);
+      window._divChart.update();
+    }
+
+    if (graph.end_rounds && graph.end_rounds.length > 0) {
+      endChart.data.labels = graph.end_rounds.map(g=>'Gen '+g.gen);
+      endChart.data.datasets = [
+        {label:'Avg Game Length',data:graph.end_rounds.map(g=>g.avg_end),borderColor:'#48dbfb',backgroundColor:'#48dbfb33',fill:true,tension:0.3},
+        {label:'% Full 300 Rounds',data:graph.end_rounds.map(g=>g.pct_full),borderColor:'#ff6b6b',backgroundColor:'#ff6b6b33',fill:true,tension:0.3,yAxisID:'y'}
+      ];
+      endChart.update('none');
+
+      // Bucket chart (latest gen)
+      const latestEnd = graph.end_rounds[graph.end_rounds.length-1];
+      if (latestEnd && latestEnd.buckets) {
+        const allBuckets = [];
+        for(let b=0;b<300;b+=10) allBuckets.push(`${b}-${b+9}`);
+        // Filter to only buckets with data to keep chart readable
+        const bData = allBuckets.map(b=>latestEnd.buckets[b]||0);
+        const nonEmpty = allBuckets.filter((_,i)=>bData[i]>0 || i<3);
+        const nonEmptyData = nonEmpty.map(b=>latestEnd.buckets[b]||0);
+        bucketChart.data.labels = nonEmpty;
+        bucketChart.data.datasets = [{
+          data:nonEmptyData,
+          backgroundColor: nonEmpty.map((_,i)=>`hsl(${i*12+180}, 70%, 55%)`)
+        }];
+        bucketChart.update('none');
+      }
+    }
+
+    // Share Price chart
+    if (graph.share_prices && graph.share_prices.length > 0) {
+      const labels = graph.share_prices.map(g=>'Gen '+g.gen);
+      const avgData = graph.share_prices.map(g=>g.all_avg);
+      // Track top 5 from latest gen across history
+      const latest = graph.share_prices[graph.share_prices.length-1];
+      const topNames = latest.top.slice(0,5).map(x=>x[0]);
+      const datasets = [{label:'All Avg', data:avgData, borderColor:'#feca57', borderWidth:2, tension:0.3, pointRadius:2}];
+      const colors = ['#ff6b6b','#48dbfb','#1dd1a1','#ff9ff3','#54a0ff'];
+      topNames.forEach((name, idx) => {
+        datasets.push({
+          label: name.length > 20 ? name.slice(0,20)+'…' : name,
+          data: graph.share_prices.map(g => {
+            const found = g.top.find(x=>x[0]===name);
+            return found ? found[1] : null;
+          }),
+          borderColor: colors[idx], borderWidth:1.5, tension:0.3, pointRadius:1, spanGaps:true
+        });
+      });
+      window._priceChart.data.labels = labels;
+      window._priceChart.data.datasets = datasets;
+      window._priceChart.update('none');
+
+      // Top Prices leaderboard
+      let priceHtml = '';
+      latest.top.slice(0,10).forEach(([s, price]) => {
+        const barW = Math.min(100, (price / Math.max(1, latest.top[0][1])) * 100);
+        priceHtml += `<div class="lb-row"><div class="name">${s}</div><div class="rate" style="color:#feca57">$${price}</div></div>
+          <div style="height:4px;border-radius:2px;margin-bottom:4px;width:${barW}%;background:linear-gradient(90deg,#feca57,#ff6b6b)"></div>`;
+      });
+      document.getElementById('topPrices').innerHTML = priceHtml;
+    }
+
+    // Rep History chart
+    if (graph.rep_history && graph.rep_history.length > 0) {
+      const labels = graph.rep_history.map(g=>'Gen '+g.gen);
+      const avgData = graph.rep_history.map(g=>g.all_avg);
+      const latest = graph.rep_history[graph.rep_history.length-1];
+      const topNames = latest.top.slice(0,5).map(x=>x[0]);
+      const botNames = latest.bottom.slice(0,5).map(x=>x[0]);
+      const datasets = [{label:'All Avg', data:avgData, borderColor:'#feca57', borderWidth:2, tension:0.3, pointRadius:2}];
+      const colors = ['#1dd1a1','#48dbfb','#ff9ff3','#54a0ff','#5f27cd'];
+      topNames.forEach((name, idx) => {
+        datasets.push({
+          label: (name.length > 18 ? name.slice(0,18)+'…' : name) + ' ↑',
+          data: graph.rep_history.map(g => {
+            const found = g.top.find(x=>x[0]===name);
+            return found ? found[1] : null;
+          }),
+          borderColor: colors[idx], borderWidth:1.5, tension:0.3, pointRadius:1, spanGaps:true
+        });
+      });
+      const redColors = ['#ff6b6b','#e17055','#d63031','#b33939','#c44569'];
+      botNames.forEach((name, idx) => {
+        datasets.push({
+          label: (name.length > 18 ? name.slice(0,18)+'…' : name) + ' ↓',
+          data: graph.rep_history.map(g => {
+            const found = g.bottom.find(x=>x[0]===name);
+            return found ? found[1] : null;
+          }),
+          borderColor: redColors[idx], borderWidth:1.5, borderDash:[5,5], tension:0.3, pointRadius:1, spanGaps:true
+        });
+      });
+      window._repHistChart.data.labels = labels;
+      window._repHistChart.data.datasets = datasets;
+      window._repHistChart.update('none');
+
+      // Rep leaderboard (high)
+      let repHtml = '';
+      latest.top.slice(0,10).forEach(([s, rep]) => {
+        const barW = Math.min(100, (rep / 9) * 100);
+        repHtml += `<div class="lb-row"><div class="name">${s}</div><div class="rate" style="color:#1dd1a1">${rep}</div></div>
+          <div style="height:4px;border-radius:2px;margin-bottom:4px;width:${barW}%;background:linear-gradient(90deg,#1dd1a1,#48dbfb)"></div>`;
+      });
+      document.getElementById('repLeader').innerHTML = repHtml;
+
+      // Low rep leaderboard (villains)
+      let lowHtml = '';
+      latest.bottom.slice(0,10).forEach(([s, rep]) => {
+        const barW = Math.min(100, (rep / 9) * 100);
+        lowHtml += `<div class="lb-row"><div class="name">${s}</div><div class="rate" style="color:#ff6b6b">${rep}</div></div>
+          <div style="height:4px;border-radius:2px;margin-bottom:4px;width:${barW}%;background:linear-gradient(90deg,#ff6b6b,#e17055)"></div>`;
+      });
+      document.getElementById('lowRep').innerHTML = lowHtml;
+    }
+
+    // Rating market prices (1★ through 10★)
+    if (graph.rating_prices && graph.rating_prices.length > 0) {
+      const labels = graph.rating_prices.map(g=>'Gen '+g.gen);
+      const starColors = {
+        '1':'#e17055','2':'#ff7675','3':'#fab1a0','4':'#fdcb6e','5':'#ffeaa7',
+        '6':'#55efc4','7':'#00cec9','8':'#74b9ff','9':'#a29bfe','10':'#fd79a8'
+      };
+      const datasets = [];
+      for(let s=1; s<=10; s++) {
+        const key = String(s);
+        datasets.push({
+          label: s+'★',
+          data: graph.rating_prices.map(g => g.stars[key] || null),
+          borderColor: starColors[key],
+          backgroundColor: starColors[key]+'33',
+          borderWidth: s===10 ? 3 : 2,
+          tension: 0.3, pointRadius: s===10 ? 3 : 1, spanGaps: true
+        });
+      }
+      window._ratingPriceChart.data.labels = labels;
+      window._ratingPriceChart.data.datasets = datasets;
+      window._ratingPriceChart.update('none');
+    }
+
+    // Trade prices by share behavior
+    if (graph.trade_prices && graph.trade_prices.length > 0) {
+      const labels = graph.trade_prices.map(g=>'Gen '+g.gen);
+      // Collect all behavior types seen
+      const allBehaviors = new Set();
+      graph.trade_prices.forEach(g => Object.keys(g.behaviors).forEach(b => allBehaviors.add(b)));
+      const behaviorColors = {
+        'default':'#48dbfb','raider_shares':'#ff6b6b','daytrader_shares':'#feca57',
+        'vulture_shares':'#ff9ff3','investor_shares':'#1dd1a1','portfolio_shares':'#54a0ff',
+        'kingmaker_shares':'#5f27cd','pump_dump_shares':'#e17055'
+      };
+      const datasets = [...allBehaviors].map(b => ({
+        label: b.replace('_shares',''),
+        data: graph.trade_prices.map(g => g.behaviors[b] || null),
+        borderColor: behaviorColors[b] || '#888',
+        borderWidth: 2, tension: 0.3, pointRadius: 2, spanGaps: true
+      }));
+      window._tradePriceChart.data.labels = labels;
+      window._tradePriceChart.data.datasets = datasets;
+      window._tradePriceChart.update('none');
+    }
+
+    // Share Trade Network
+    if (graph.share_network && graph.share_network.length > 0) {
+      const latest = graph.share_network[graph.share_network.length - 1];
+      const panel = document.getElementById('shareNetworkPanel');
+      if (latest.trades && latest.trades.length > 0) {
+        // Group by buyer
+        const byBuyer = {};
+        for (const t of latest.trades) {
+          const [buyer, target] = t.pair.split('→');
+          if (!byBuyer[buyer]) byBuyer[buyer] = [];
+          byBuyer[buyer].push({ target, count: t.count, avg: t.avg_price });
+        }
+        let html = '<table style="width:100%;border-collapse:collapse;">';
+        html += '<tr style="color:#ffd93d;border-bottom:1px solid #333;"><th align="left">Buyer</th><th align="left">→ Target</th><th align="right">Trades</th><th align="right">Avg $</th></tr>';
+        // Sort buyers by total trades
+        const buyers = Object.entries(byBuyer).sort((a,b) => b[1].reduce((s,x)=>s+x.count,0) - a[1].reduce((s,x)=>s+x.count,0));
+        for (const [buyer, targets] of buyers.slice(0, 15)) {
+          targets.sort((a,b) => b.count - a.count);
+          const top = targets[0];
+          const pct = ((top.count / targets.reduce((s,x)=>s+x.count, 0)) * 100).toFixed(0);
+          html += `<tr style="border-bottom:1px solid #222;">`;
+          html += `<td style="color:#48dbfb;padding:3px 6px;">${buyer}</td>`;
+          html += `<td style="color:#ff9ff3;padding:3px 6px;">${top.target} (${pct}%)</td>`;
+          html += `<td align="right" style="padding:3px 6px;">${top.count.toLocaleString()}</td>`;
+          html += `<td align="right" style="color:#feca57;padding:3px 6px;">$${top.avg}</td>`;
+          html += `</tr>`;
+          // Show runner-up if exists
+          if (targets.length > 1) {
+            const t2 = targets[1];
+            const pct2 = ((t2.count / targets.reduce((s,x)=>s+x.count, 0)) * 100).toFixed(0);
+            html += `<tr><td></td><td style="color:#aaa;padding:1px 6px;font-size:10px;">${t2.target} (${pct2}%)</td><td align="right" style="font-size:10px;padding:1px 6px;">${t2.count.toLocaleString()}</td><td align="right" style="color:#aaa;font-size:10px;padding:1px 6px;">$${t2.avg}</td></tr>`;
+          }
+        }
+        html += '</table>';
+        panel.innerHTML = html;
+      }
+    }
+
+    // Stats update with end-round info
+    const avgEnd = state.avg_end_round || '?';
+    const pctFull = state.pct_full_games || '?';
+
+    document.getElementById('status').textContent = `Last updated: ${new Date().toLocaleTimeString()} | Gen ${state.generation} | ${(state.total_games/1000).toFixed(0)}k games | Avg game: ${avgEnd} rounds | ${pctFull}% go full 300`;
+  } catch(e) {
+    document.getElementById('status').textContent = 'Error loading data: ' + e.message;
+  }
+}
+
+initCharts();
+update();
+setInterval(update, 15000);
+</script>
+</body>
+</html>

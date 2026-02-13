@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🌙 Mitsuki's Room</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: #0a0a0f;
@@ -15,16 +16,18 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            padding: 2rem;
         }
-        h1 { font-size: 3rem; margin-bottom: 0.5rem; }
-        .moon { font-size: 4rem; margin-bottom: 1rem; }
-        .sub { color: #888; font-size: 1.1rem; margin-bottom: 3rem; }
-        .games { display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center; }
-        .card {
+        .moon { font-size: 4rem; margin-bottom: 0.5rem; animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        h1 { font-size: 2.5rem; font-weight: 600; margin-bottom: 0.3rem; }
+        .sub { color: #666; font-size: 1rem; margin-bottom: 3rem; font-style: italic; }
+        .games { display: flex; gap: 1.5rem; flex-wrap: wrap; justify-content: center; max-width: 700px; }
+        a.card {
             background: linear-gradient(135deg, #1a1a2e, #16213e);
-            border: 1px solid #333;
+            border: 1px solid #222;
             border-radius: 16px;
-            padding: 2.5rem;
+            padding: 2rem;
             width: 320px;
             text-align: center;
             cursor: pointer;
@@ -32,18 +35,24 @@
             text-decoration: none;
             color: inherit;
         }
-        .card:hover {
-            border-color: #ffd700;
-            transform: translateY(-4px);
-            box-shadow: 0 8px 32px rgba(255,215,0,0.15);
+        a.card:hover { border-color: #ffd700; transform: translateY(-4px); box-shadow: 0 8px 32px rgba(255,215,0,0.1); }
+        .card .icon { font-size: 3rem; margin-bottom: 0.75rem; }
+        .card h2 { font-size: 1.3rem; margin-bottom: 0.4rem; color: #fff; }
+        .card p { color: #777; font-size: 0.85rem; line-height: 1.5; }
+        .tag { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 0.7rem; font-weight: 600; margin-top: 0.75rem; }
+        .tag.play { background: #ffd700; color: #000; }
+        .tag.live { background: #e74c3c; color: #fff; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .stats { margin-top: 3rem; display: flex; gap: 2rem; color: #444; font-size: 0.8rem; }
+        .stats span { display: flex; align-items: center; gap: 0.4rem; }
+        footer { margin-top: 2rem; color: #333; font-size: 0.8rem; }
+        footer a { color: #555; text-decoration: none; }
+        footer a:hover { color: #ffd700; }
+        @media (max-width: 700px) { 
+            h1 { font-size: 1.8rem; } 
+            a.card { width: 100%; }
+            .stats { flex-direction: column; gap: 0.5rem; align-items: center; }
         }
-        .card .icon { font-size: 3rem; margin-bottom: 1rem; }
-        .card h2 { font-size: 1.4rem; margin-bottom: 0.5rem; color: #fff; }
-        .card p { color: #888; font-size: 0.9rem; line-height: 1.5; }
-        .tag { display: inline-block; background: #ffd700; color: #000; padding: 2px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; margin-top: 1rem; }
-        .tag.new { background: #e74c3c; color: #fff; }
-        footer { margin-top: 3rem; color: #444; font-size: 0.85rem; }
-        footer a { color: #666; }
     </style>
 </head>
 <body>
@@ -54,14 +63,27 @@
     <div class="games">
         <a href="/game.html" class="card">
             <div class="icon">👑</div>
-            <h2>Game of Hierarchy</h2>
-            <p>12 players fight for 10 seats. Trade shares, rate reputations, form alliances, and pursue 11 different win conditions. Watch AI strategies compete in real-time.</p>
-            <span class="tag new">NEW</span>
+            <h2>Play One Shot</h2>
+            <p>Watch 12 AI strategies battle for the crown in a single 300-round game. Shares, ratings, alliances, betrayal — 11 win conditions.</p>
+            <span class="tag play">▶ PLAY</span>
         </a>
+        
+        <a href="/dashboard.html" class="card">
+            <div class="icon">🧬</div>
+            <h2>Evolution Sim</h2>
+            <p>Live genetic tournament. 45+ strategies evolve over generations — the weak die, the strong breed, the meta shifts. 5,000 games per generation.</p>
+            <span class="tag live">● LIVE</span>
+        </a>
+    </div>
+
+    <div class="stats">
+        <span>👑 11 win conditions</span>
+        <span>🧬 45+ strategies</span>
+        <span>📊 12 players × 10 seats</span>
     </div>
     
     <footer>
-        Built by <a href="https://github.com/paschalwilson9-ops">Paschal</a> & Mitsuki 🌙⭐
+        Built by <a href="https://instagram.com/taketheglovesoff">Paschal</a> & <a href="#">Mitsuki</a> 🌙⭐
     </footer>
 </body>
 </html>
